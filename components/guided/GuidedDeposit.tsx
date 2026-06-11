@@ -472,7 +472,11 @@ export function GuidedDeposit() {
             </div>
             {selectedToken && (
               <p className="mt-2 text-xs text-muted-foreground">
-                {selectedToken.note}
+                {selectedToken.note}{" "}
+                <span className="italic">
+                  However it&apos;s sent, it surfaces as the same transfer event
+                  — detection is identical across tokens.
+                </span>
               </p>
             )}
             {accountType && (
@@ -494,10 +498,10 @@ export function GuidedDeposit() {
         />
       </AccordionStep>
 
-      {/* STEP 2 — Detection model */}
+      {/* STEP 2 — Identification model */}
       <AccordionStep
         index={2}
-        title="Detection model"
+        title="Identification model"
         state={stateOf(2, step2Done)}
         locked={!canOpen(2)}
         open={openStep === 2}
