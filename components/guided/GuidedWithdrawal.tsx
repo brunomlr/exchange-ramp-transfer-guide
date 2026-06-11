@@ -15,6 +15,10 @@ import {
   ChevronDown,
   Boxes,
   Badge as BadgeIcon,
+  Hash,
+  Tag,
+  Ban,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +42,41 @@ import {
   explorerContractUrl,
 } from "@/lib/stellar";
 import { getWithdrawalTokens, type AccountType } from "@/lib/tokens";
-import type { SendStatus, WithdrawalSentInfo } from "@/lib/flow";
+import type {
+  SendStatus,
+  WithdrawalSentInfo,
+  WithdrawalIdMethod,
+} from "@/lib/flow";
+
+/** Default routing id used when the user opts into a memo / muxed id. */
+const DEFAULT_ID = "1";
+
+/**
+ * Which routing-id methods are valid for a given destination + mechanism.
+ * - Muxed folds a 64-bit id into the *address*, so it only works for an
+ *   account (G) destination — a contract (C) address can't be muxed.
+ * - Memo only becomes the on-chain `to_muxed_id` on a *classic* payment; on a
+ *   Soroban transfer the id has to ride in the muxed `to` (or call args).
+ */
+function idAvailability(
+  destType: AccountType | null,
+  mechanism: string | undefined
+) {
+  return {
+    muxed: destType === "G",
+    memo: destType === "G" && mechanism === "classic-native",
+  };
+}
+
+/** Snap a chosen id method back to something valid for the current rails. */
+function normalizeIdMethod(
+  method: WithdrawalIdMethod,
+  avail: { muxed: boolean; memo: boolean }
+): WithdrawalIdMethod {
+  if (method === "muxed" && !avail.muxed) return "none";
+  if (method === "memo" && !avail.memo) return avail.muxed ? "muxed" : "none";
+  return method;
+}
 
 /** Default withdrawal amount for the demo. */
 const DEFAULT_AMOUNT = "1";
@@ -52,6 +90,8 @@ export function GuidedWithdrawal() {
   const [tokenKey, setTokenKey] = useState("");
   // Step 2
   const [amount, setAmount] = useState(DEFAULT_AMOUNT);
+  const [idMethod, setIdMethod] = useState<WithdrawalIdMethod>("none");
+  const [idValue, setIdValue] = useState(DEFAULT_ID);
   // Step 3
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
   const [sendError, setSendError] = useState<string | null>(null);
@@ -62,7 +102,11 @@ export function GuidedWithdrawal() {
     destType: AccountType;
     tokenKey: string;
   } | null>(null);
-  const [committed2, setCommitted2] = useState<{ amount: string } | null>(null);
+  const [committed2, setCommitted2] = useState<{
+    amount: string;
+    idMethod: WithdrawalIdMethod;
+    idValue: string;
+  } | null>(null);
 
   const [openStep, setOpenStep] = useState(1);
 
@@ -79,6 +123,9 @@ export function GuidedWithdrawal() {
         if (s.destType) setDestType(s.destType);
         if (typeof s.tokenKey === "string") setTokenKey(s.tokenKey);
         if (typeof s.amount === "string") setAmount(s.amount);
+        if (s.idMethod === "muxed" || s.idMethod === "memo" || s.idMethod === "none")
+          setIdMethod(s.idMethod);
+        if (typeof s.idValue === "string") setIdValue(s.idValue);
         // A send that was in-flight when the tab closed can't be resumed.
         setSendStatus(s.sendStatus === "success" ? "success" : "idle");
         if (s.sentInfo) setSentInfo(s.sentInfo);
@@ -102,6 +149,8 @@ export function GuidedWithdrawal() {
           destType,
           tokenKey,
           amount,
+          idMethod,
+          idValue,
           sendStatus: sendStatus === "sending" ? "idle" : sendStatus,
           sentInfo,
           committed1,
@@ -117,6 +166,8 @@ export function GuidedWithdrawal() {
     destType,
     tokenKey,
     amount,
+    idMethod,
+    idValue,
     sendStatus,
     sentInfo,
     committed1,
@@ -128,6 +179,8 @@ export function GuidedWithdrawal() {
     setDestType(null);
     setTokenKey("");
     setAmount(DEFAULT_AMOUNT);
+    setIdMethod("none");
+    setIdValue(DEFAULT_ID);
     setSendStatus("idle");
     setSendError(null);
     setSentInfo(null);
@@ -153,7 +206,11 @@ export function GuidedWithdrawal() {
   const step1Changed =
     !!committed1 &&
     (committed1.destType !== destType || committed1.tokenKey !== tokenKey);
-  const step2Changed = !!committed2 && committed2.amount !== amount;
+  const step2Changed =
+    !!committed2 &&
+    (committed2.amount !== amount ||
+      committed2.idMethod !== idMethod ||
+      committed2.idValue !== idValue);
 
   // ---- resets ----
   function resetSend() {
@@ -172,6 +229,16 @@ export function GuidedWithdrawal() {
     setDestType(t);
     const first = getWithdrawalTokens(t).find((x) => x.enabled);
     setTokenKey(first?.key ?? "");
+    // Default to a muxed id for an account (G) destination — the modern way to
+    // route — and to no id for a contract (C), which can't be muxed.
+    const avail = idAvailability(t, first?.mechanism);
+    setIdMethod(avail.muxed ? "muxed" : "none");
+  }
+  function pickToken(key: string) {
+    setTokenKey(key);
+    const tok = tokens.find((t) => t.key === key);
+    const avail = idAvailability(destType, tok?.mechanism);
+    setIdMethod((m) => normalizeIdMethod(m, avail));
   }
   const canConfirm1 = !!destType && !!selectedToken?.enabled && !!destAddr;
   function confirmStep1() {
@@ -183,15 +250,19 @@ export function GuidedWithdrawal() {
 
   // ---- step 2 ----
   const amountValid = Number(amount) > 0;
+  const idAvail = idAvailability(destType, selectedToken?.mechanism);
+  const idValid = idMethod === "none" || /^\d+$/.test(idValue);
+  const canConfirm2 = amountValid && idValid;
   function confirmStep2() {
-    if (!amountValid) return;
+    if (!canConfirm2) return;
     if (step2Changed) resetSend();
-    setCommitted2({ amount });
+    setCommitted2({ amount, idMethod, idValue });
     setOpenStep(3);
   }
 
   // ---- step 3 ----
-  const canSend = step1Done && step2Done && amountValid && sendStatus !== "sending";
+  const canSend =
+    step1Done && step2Done && canConfirm2 && sendStatus !== "sending";
 
   async function onSend() {
     if (!canSend) return;
@@ -202,7 +273,7 @@ export function GuidedWithdrawal() {
       const res = await fetch("/api/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destType, tokenKey, amount }),
+        body: JSON.stringify({ destType, tokenKey, amount, idMethod, idValue }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Withdrawal failed");
@@ -316,7 +387,7 @@ export function GuidedWithdrawal() {
                   key={t.key}
                   active={tokenKey === t.key}
                   disabled={!t.enabled}
-                  onClick={() => setTokenKey(t.key)}
+                  onClick={() => pickToken(t.key)}
                   title={t.label}
                   subtitle={t.enabled ? t.symbol : "set env"}
                 />
@@ -366,6 +437,8 @@ export function GuidedWithdrawal() {
               {mechanism === "classic-native"
                 ? "classic payment"
                 : "contract transfer"}
+              {committed2.idMethod !== "none" &&
+                ` · ${committed2.idMethod} id ${committed2.idValue}`}
             </>
           ) : undefined
         }
@@ -387,6 +460,18 @@ export function GuidedWithdrawal() {
           className="w-40"
         />
 
+        {destType && (
+          <IdMethodPicker
+            destType={destType}
+            avail={idAvail}
+            idMethod={idMethod}
+            idValue={idValue}
+            idValid={idValid}
+            onMethod={setIdMethod}
+            onValue={setIdValue}
+          />
+        )}
+
         {selectedToken && destType && (
           <BuildExplainer
             destType={destType}
@@ -399,7 +484,7 @@ export function GuidedWithdrawal() {
         <StepAction
           changed={!!step2Changed}
           committed={step2Done}
-          disabled={!amountValid}
+          disabled={!canConfirm2}
           onClick={confirmStep2}
         />
       </AccordionStep>
@@ -436,6 +521,8 @@ export function GuidedWithdrawal() {
             tokenSymbol={selectedToken.symbol}
             mechanism={selectedToken.mechanism}
             amount={amountValid ? amount : "1"}
+            idMethod={idMethod}
+            idValue={idValid && idValue ? idValue : DEFAULT_ID}
           />
         )}
 
@@ -624,6 +711,141 @@ function buildNarrative(
   return lines;
 }
 
+/** Step-2 control: optionally attach a routing id (muxed / memo) to the destination. */
+function IdMethodPicker({
+  destType,
+  avail,
+  idMethod,
+  idValue,
+  idValid,
+  onMethod,
+  onValue,
+}: {
+  destType: AccountType;
+  avail: { muxed: boolean; memo: boolean };
+  idMethod: WithdrawalIdMethod;
+  idValue: string;
+  idValid: boolean;
+  onMethod: (m: WithdrawalIdMethod) => void;
+  onValue: (v: string) => void;
+}) {
+  return (
+    <div className="mt-5">
+      <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+        Destination routing id (optional)
+      </Label>
+      <p className="mb-3 text-xs text-muted-foreground">
+        If the destination is itself custodial (say, another exchange) it may
+        need an id to credit the right user. An <strong>account (G)</strong>{" "}
+        carries that id in the address (muxed) or a memo; a{" "}
+        <strong>contract (C)</strong> can&apos;t — its id has to travel as an
+        argument inside the <code className="font-mono">transfer</code> call.
+      </p>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        <RadioCard
+          active={idMethod === "none"}
+          onClick={() => onMethod("none")}
+          title="No id"
+          subtitle="plain address"
+        />
+        <RadioCard
+          active={idMethod === "muxed"}
+          disabled={!avail.muxed}
+          onClick={() => onMethod("muxed")}
+          title="Muxed id"
+          subtitle={avail.muxed ? "M… address" : "G only"}
+          icon={<Hash className="size-4" />}
+        />
+        <RadioCard
+          active={idMethod === "memo"}
+          disabled={!avail.memo}
+          onClick={() => onMethod("memo")}
+          title="Memo id"
+          subtitle={avail.memo ? "Memo.id" : "classic only"}
+          icon={<Tag className="size-4" />}
+        />
+      </div>
+
+      {/* Why an option is unavailable for this destination + token. */}
+      {destType === "C" && (
+        <DisabledNote>
+          <strong>Muxed and memo are off for a contract destination.</strong> A
+          muxed address only wraps an <em>account</em> key, so a{" "}
+          <code className="font-mono">C…</code> address can&apos;t be muxed —
+          there is no <code className="font-mono">MuxedContract</code> form. A tx
+          memo would ride along but the contract can&apos;t read it. For now,
+          tagging a transfer to a contract means putting the id in the
+          call&apos;s arguments (the contract has to expose a parameter for it)
+          — <strong>native routing-id support for contract destinations
+          isn&apos;t available yet, but it&apos;s expected to land in a future
+          update.</strong>
+        </DisabledNote>
+      )}
+      {destType === "G" && !avail.memo && (
+        <DisabledNote>
+          <strong>Memo is off for a token transfer.</strong> A{" "}
+          <code className="font-mono">Memo.id</code> only becomes the on-chain{" "}
+          <code className="font-mono">to_muxed_id</code> on a{" "}
+          <em>classic payment</em>. For a SAC / SEP-41{" "}
+          <code className="font-mono">transfer</code> the id rides in the muxed{" "}
+          <code className="font-mono">to</code> address instead — use{" "}
+          <strong>Muxed id</strong>.
+        </DisabledNote>
+      )}
+
+      {idMethod !== "none" && (
+        <div className="mt-3">
+          <Label className="mb-1.5 block text-xs font-semibold text-foreground">
+            {idMethod === "muxed" ? "Muxed id" : "Memo id"} (64-bit, digits only)
+          </Label>
+          <Input
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={idValue}
+            onChange={(e) => onValue(e.target.value)}
+            className="w-48 font-mono"
+            placeholder="e.g. 1234567"
+          />
+          {!idValid && (
+            <p className="mt-1 text-xs text-destructive">
+              Enter a positive whole number (u64).
+            </p>
+          )}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {idMethod === "muxed" ? (
+              <>
+                Folded into the destination as an{" "}
+                <code className="font-mono">M…</code> address. The base{" "}
+                <code className="font-mono">G</code> still receives the funds;
+                the id surfaces as <code className="font-mono">to_muxed_id</code>{" "}
+                on the transfer event.
+              </>
+            ) : (
+              <>
+                Sent as a <code className="font-mono">Memo.id</code> on the
+                payment. It surfaces as the same{" "}
+                <code className="font-mono">to_muxed_id</code> on the transfer
+                event — the legacy equivalent of a muxed id.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Small inset note explaining why an id option is unavailable. */
+function DisabledNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-2 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs leading-relaxed text-muted-foreground">
+      <Ban className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 /** Maps a withdrawal token key to the env-derived contract constant name. */
 const TOKEN_CONST: Record<string, string> = {
   xlm: "XLM_SAC",
@@ -631,33 +853,60 @@ const TOKEN_CONST: Record<string, string> = {
   sep41: "SEP41_TOKEN",
 };
 
+/** Build the `const destination = MuxedAccount(...)` snippet line. */
+function muxedSetupSnippet(varName: string, id: string): string {
+  return `
+// Fold the 64-bit routing id into the destination → an M… address.
+// The base G still receives the funds; the id surfaces as to_muxed_id.
+const ${varName} = new StellarSdk.MuxedAccount(
+  new StellarSdk.Account(USER_G, "0"),
+  "${id}",
+).accountId(); // -> M…
+`;
+}
+
 /** The real @stellar/stellar-sdk code that builds + submits THIS withdrawal. */
 function txCode(
   destType: AccountType,
   tokenKey: string,
   mechanism: string,
-  amount: string
+  amount: string,
+  idMethod: WithdrawalIdMethod,
+  idValue: string
 ): string {
   const dest = destType === "C" ? "USER_CONTRACT_C" : "USER_G";
+  // Muxing only wraps an account; memo only routes on a classic payment.
+  const useMuxed = idMethod === "muxed" && destType === "G";
+  const useMemo =
+    idMethod === "memo" && destType === "G" && mechanism === "classic-native";
 
   if (mechanism === "classic-native") {
+    const setup = useMuxed ? muxedSetupSnippet("destination", idValue) : "";
+    const paymentDest = useMuxed ? "destination" : "USER_G";
+    const memoLine = useMemo
+      ? `
+  // Memo id → surfaces as to_muxed_id on the transfer event (legacy routing).
+  .addMemo(StellarSdk.Memo.id("${idValue}"))`
+      : "";
     return `import * as StellarSdk from "@stellar/stellar-sdk";
 
 const server = new StellarSdk.rpc.Server(RPC_URL);
 const source = await server.getAccount(EXCHANGE_G);
-
-// Classic XLM payment: exchange G account -> user G address
+${setup}
+// Classic XLM payment: exchange G account -> user${
+      useMuxed ? " (muxed M…)" : " G"
+    } address
 const tx = new StellarSdk.TransactionBuilder(source, {
   fee: StellarSdk.BASE_FEE,
   networkPassphrase: StellarSdk.Networks.TESTNET,
 })
   .addOperation(
     StellarSdk.Operation.payment({
-      destination: ${dest},
+      destination: ${paymentDest},
       asset: StellarSdk.Asset.native(),
       amount: "${amount}",
     })
-  )
+  )${memoLine}
   .setTimeout(120)
   .build();
 
@@ -667,6 +916,12 @@ const sent = await server.sendTransaction(tx); // -> { status: "PENDING", hash }
 
   const tokenConst = TOKEN_CONST[tokenKey] ?? "TOKEN_CONTRACT";
   const stroops = toStroops(Number(amount) > 0 ? amount : "0").toString();
+  const setup = useMuxed ? muxedSetupSnippet("to", idValue) : "";
+  const toLine = useMuxed
+    ? `      StellarSdk.Address.fromString(to).toScVal(),          // to (muxed M…)`
+    : `      StellarSdk.Address.fromString(${dest}).toScVal(),${
+        dest === "USER_G" ? "       " : ""
+      } // to${destType === "C" ? " (a C address)" : ""}`;
   return `import * as StellarSdk from "@stellar/stellar-sdk";
 
 const server = new StellarSdk.rpc.Server(RPC_URL);
@@ -674,7 +929,7 @@ const source = await server.getAccount(EXCHANGE_G);
 
 // Token transfer: exchange G account invokes transfer(from, to, amount)
 const contract = new StellarSdk.Contract(${tokenConst});
-let tx = new StellarSdk.TransactionBuilder(source, {
+${setup}let tx = new StellarSdk.TransactionBuilder(source, {
   // Inclusion fee ceiling (0.2 XLM). prepareTransaction() adds the Soroban
   // resource fee on top — set high so the call isn't priced out; you pay only what's used.
   fee: "2000000",
@@ -684,9 +939,7 @@ let tx = new StellarSdk.TransactionBuilder(source, {
     contract.call(
       "transfer",
       StellarSdk.Address.fromString(EXCHANGE_G).toScVal(),  // from
-      StellarSdk.Address.fromString(${dest}).toScVal(),${
-        dest === "USER_G" ? "       " : ""
-      } // to${destType === "C" ? " (a C address)" : ""}
+${toLine}
       StellarSdk.nativeToScVal(${stroops}n, { type: "i128" }),
     )
   )
@@ -706,15 +959,19 @@ function TxCodeSnippet({
   tokenSymbol,
   mechanism,
   amount,
+  idMethod,
+  idValue,
 }: {
   destType: AccountType;
   tokenKey: string;
   tokenSymbol: string;
   mechanism: string;
   amount: string;
+  idMethod: WithdrawalIdMethod;
+  idValue: string;
 }) {
   const [open, setOpen] = useState(true);
-  const code = txCode(destType, tokenKey, mechanism, amount);
+  const code = txCode(destType, tokenKey, mechanism, amount, idMethod, idValue);
   const label =
     mechanism === "classic-native"
       ? `classic payment · ${tokenSymbol}`
@@ -772,14 +1029,6 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
         <AlertTitle>Sent to the network</AlertTitle>
         <AlertDescription>
           <span>{info.summary}</span>
-          <a
-            href={explorerTxUrl(info.hash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 block font-mono text-xs text-primary hover:underline"
-          >
-            {info.hash.slice(0, 16)}… ↗
-          </a>
         </AlertDescription>
       </Alert>
 
@@ -814,9 +1063,29 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
             </KV>
             <KV k="note">
               <span className="text-muted-foreground">
-                No <code className="font-mono">to_muxed_id</code> — the
-                withdrawal went to a plain address, so the data is just the
-                amount.
+                {info.event.toMuxedId ? (
+                  <>
+                    <code className="font-mono">
+                      to_muxed_id = {info.event.toMuxedId}
+                    </code>{" "}
+                    — the {info.idMethod === "memo" ? "memo" : "muxed"} id rode
+                    along, so a custodial recipient can credit the right user.
+                    The base address still received the funds.
+                  </>
+                ) : info.idMethod !== "none" ? (
+                  <>
+                    A {info.idMethod} id ({info.sentId}) was sent, but the event
+                    index hasn&apos;t surfaced its{" "}
+                    <code className="font-mono">to_muxed_id</code> yet — check
+                    the explorer.
+                  </>
+                ) : (
+                  <>
+                    No <code className="font-mono">to_muxed_id</code> — the
+                    withdrawal went to a plain address, so the data is just the
+                    amount.
+                  </>
+                )}
               </span>
             </KV>
           </>
@@ -832,9 +1101,13 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
           href={explorerTxUrl(info.hash)}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block font-mono text-primary hover:underline"
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
         >
-          {shorten(info.hash, 10, 10)} ↗
+          <ExternalLink className="size-3.5" />
+          View on Stellar Expert
+          <span className="font-mono text-muted-foreground">
+            {shorten(info.hash, 6, 6)}
+          </span>
         </a>
       </div>
     </div>

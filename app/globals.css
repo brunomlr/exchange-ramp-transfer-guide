@@ -117,6 +117,30 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Per-flow accents: retint the neutral `--primary` so every existing
+   *-primary utility inside the flow picks up the flow's color.
+   Deposit = green (matches the completion/done color), withdrawal = blue. */
+.accent-deposit {
+  --primary: oklch(0.596 0.145 163.225); /* emerald-600 */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.596 0.145 163.225);
+}
+.accent-withdrawal {
+  --primary: oklch(0.546 0.245 262.881); /* blue-600 */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.546 0.245 262.881);
+}
+.dark .accent-deposit {
+  --primary: oklch(0.696 0.17 162.48); /* emerald-500 */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.696 0.17 162.48);
+}
+.dark .accent-withdrawal {
+  --primary: oklch(0.623 0.214 259.815); /* blue-500 */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.623 0.214 259.815);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

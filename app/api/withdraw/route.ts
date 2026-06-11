@@ -6,11 +6,12 @@ import {
   EXCHANGE_G,
   USER_G,
   USER_CONTRACT_C,
+  muxedAddress,
   toStroops,
 } from "@/lib/stellar";
 import { findWithdrawalToken, type AccountType } from "@/lib/tokens";
 import { decodeTransferEvent } from "@/lib/events";
-import type { EmittedEvent } from "@/lib/flow";
+import type { EmittedEvent, WithdrawalIdMethod } from "@/lib/flow";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,16 @@ interface WithdrawRequest {
   destType: AccountType;
   tokenKey: string;
   amount: string;
+  /**
+   * Optional routing id attached to the destination so a custodial recipient
+   * (e.g. another exchange) can credit the right user:
+   * - "muxed": fold a 64-bit id into the destination address (M…). Accounts only.
+   * - "memo":  carry a `Memo.id` on a classic payment (surfaces as to_muxed_id).
+   * - "none":  plain address, no id.
+   */
+  idMethod?: WithdrawalIdMethod;
+  /** The 64-bit id value, as a decimal string, when idMethod !== "none". */
+  idValue?: string;
 }
 
 const TRANSFER_TOPIC =
@@ -127,6 +138,7 @@ async function fetchEmittedEvent(
           topicsRaw: t.topicsRaw,
           dataRaw: t.dataRaw,
           txHash: t.txHash,
+          toMuxedId: t.toMuxedId,
         };
       }
     } catch {
@@ -141,14 +153,22 @@ function humanSummary(
   destType: AccountType,
   tokenSymbol: string,
   amount: string,
-  mechanism: string
+  mechanism: string,
+  idMethod: WithdrawalIdMethod,
+  idValue: string
 ): string {
   const dest =
     destType === "G" ? "a user's Classic (G) address" : "a user's Contract (C) address";
+  const idSuffix =
+    idMethod === "muxed"
+      ? ` with a muxed id (${idValue})`
+      : idMethod === "memo"
+        ? ` with memo id ${idValue}`
+        : "";
   if (mechanism === "classic-native") {
-    return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest} with a classic payment operation.`;
+    return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest}${idSuffix} with a classic payment operation.`;
   }
-  return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest} by invoking the token contract's transfer.`;
+  return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest}${idSuffix} by invoking the token contract's transfer.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -206,24 +226,47 @@ export async function POST(req: NextRequest) {
     const source = await server.getAccount(exchange.publicKey());
     const stroops = toStroops(amount || "1");
 
+    // Resolve the optional routing id. Muxing only wraps an *account*, so it's
+    // valid only for a G destination; a memo only becomes the on-chain
+    // `to_muxed_id` on a *classic* payment. Anything that doesn't fit those
+    // rails (or a malformed id) falls back to a plain address with no id.
+    const reqId = body.idMethod ?? "none";
+    const idValue = body.idValue ?? "";
+    const hasId = /^\d+$/.test(idValue);
+    const useMuxed = reqId === "muxed" && destType === "G" && hasId;
+    const useMemo =
+      reqId === "memo" &&
+      destType === "G" &&
+      token.mechanism === "classic-native" &&
+      hasId;
+    const idMethod: WithdrawalIdMethod = useMuxed
+      ? "muxed"
+      : useMemo
+        ? "memo"
+        : "none";
+    // A muxed id folds into the destination address; a memo leaves the address
+    // plain and rides on the transaction envelope instead.
+    const muxedDest = useMuxed ? muxedAddress(USER_G, idValue) : null;
+
     let built: { hash: string; ledger: number };
 
     if (token.mechanism === "classic-native") {
       // Classic XLM payment: exchange G account → user G address. (Only valid
       // for a G destination — a contract can't receive a classic payment.)
-      const tx = new StellarSdk.TransactionBuilder(source, {
+      const tb = new StellarSdk.TransactionBuilder(source, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase,
-      })
-        .addOperation(
-          StellarSdk.Operation.payment({
-            destination,
-            asset: StellarSdk.Asset.native(),
-            amount: amount || "1",
-          })
-        )
-        .setTimeout(120)
-        .build();
+      }).addOperation(
+        StellarSdk.Operation.payment({
+          // Muxed id → an M… destination; memo/none → the plain G address.
+          destination: muxedDest ?? destination,
+          asset: StellarSdk.Asset.native(),
+          amount: amount || "1",
+        })
+      );
+      // A memo id surfaces as `to_muxed_id` in the emitted transfer event.
+      if (useMemo) tb.addMemo(StellarSdk.Memo.id(idValue));
+      const tx = tb.setTimeout(120).build();
       built = await submitAndPoll(server, tx, [exchange]);
     } else {
       // Contract transfer: the exchange G account invokes the token contract's
@@ -243,7 +286,9 @@ export async function POST(req: NextRequest) {
           contract.call(
             "transfer",
             StellarSdk.Address.fromString(EXCHANGE_G).toScVal(),
-            StellarSdk.Address.fromString(destination).toScVal(),
+            // A muxed M… address carries the id straight into the transfer;
+            // otherwise the plain base address (G or C).
+            StellarSdk.Address.fromString(muxedDest ?? destination).toScVal(),
             StellarSdk.nativeToScVal(stroops, { type: "i128" })
           )
         )
@@ -269,7 +314,16 @@ export async function POST(req: NextRequest) {
       mechanism: token.mechanism,
       event,
       confirmedOnChain: !!event,
-      summary: humanSummary(destType, token.symbol, amount || "1", token.mechanism),
+      idMethod,
+      sentId: idMethod === "none" ? undefined : idValue,
+      summary: humanSummary(
+        destType,
+        token.symbol,
+        amount || "1",
+        token.mechanism,
+        idMethod,
+        idValue
+      ),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

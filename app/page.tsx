@@ -10,12 +10,14 @@ const FLOWS = [
   {
     href: "/deposit",
     icon: ArrowDownToLine,
+    accent: "accent-deposit",
     title: "Guided deposit",
     body: "A user sends funds to the ramp or exchange, then the ramp or exchange detects the deposit on-chain from the unified event stream — across the exchange and ramp models.",
   },
   {
     href: "/withdrawal",
     icon: ArrowUpFromLine,
+    accent: "accent-withdrawal",
     title: "Guided withdrawal",
     body: "The ramp or exchange sends funds out of its own G account to a user's G address or C address. See how the transaction is built and sent in each model — classic payment vs. contract transfer.",
   },
@@ -42,7 +44,7 @@ export default function GuidedLandingPage() {
               href={f.href}
               className="group flex flex-col gap-3 rounded-xl border p-5 transition-colors hover:border-primary/60 hover:bg-muted/40"
             >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className={`${f.accent} flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary`}>
                 <Icon className="size-5" />
               </span>
               <div className="flex-1">

@@ -27,8 +27,9 @@ export interface SentInfo {
 
 /**
  * The CAP-67 transfer event a withdrawal emits, as surfaced to the UI.
- * Withdrawals send to a plain address (no muxing/memo), so there is no
- * `to_muxed_id` — the data is just the amount.
+ * `toMuxedId` is present only when the withdrawal carried a routing id — a
+ * muxed (M…) destination or a classic `Memo.id`; otherwise the data is just
+ * the amount and the funds went to a plain address.
  */
 export interface EmittedEvent {
   from: string;
@@ -39,7 +40,12 @@ export interface EmittedEvent {
   topicsRaw: string[];
   dataRaw: string;
   txHash?: string;
+  /** The 64-bit routing id carried on-chain, if any (muxed dest or memo). */
+  toMuxedId?: string;
 }
+
+/** How a withdrawal optionally tags its destination with a routing id. */
+export type WithdrawalIdMethod = "none" | "muxed" | "memo";
 
 export interface WithdrawalSentInfo {
   hash: string;
@@ -58,6 +64,10 @@ export interface WithdrawalSentInfo {
   event: EmittedEvent | null;
   /** True when we read the real event back from RPC (vs. timed out). */
   confirmedOnChain: boolean;
+  /** Routing-id method actually used for this withdrawal. */
+  idMethod: WithdrawalIdMethod;
+  /** The 64-bit id sent (when idMethod !== "none"). */
+  sentId?: string;
 }
 
 export const STEPS = [

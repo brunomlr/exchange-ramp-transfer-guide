@@ -59,7 +59,8 @@ const MODEL_OPTIONS: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   tagline: string;
-  detail: string;
+  detail?: string;
+  bullets?: string[];
 }[] = [
   {
     value: "exchange",
@@ -73,9 +74,11 @@ const MODEL_OPTIONS: {
     value: "ramp",
     title: "Ramp model",
     icon: ArrowLeftRight,
-    tagline: "A deposit intent: the user's wallet (amount optional)",
-    detail:
-      "The ramp creates an intent pinned to the user's wallet address, with an optional amount — typical when buying a different token at a locked rate. Matched on the source wallet (and amount, if set), no memo or muxing.",
+    tagline: "Tracking a wallet or a deposit intent",
+    bullets: [
+      "Persistent address tracking — any incoming deposit from the user's address is processed automatically.",
+      "A single deposit intent on the user's account, optionally pinned to an amount — used for locked-token cases where the deposit must match exactly.",
+    ],
   },
 ];
 
@@ -545,9 +548,18 @@ export function GuidedDeposit() {
                   )}
                   {o.tagline}
                 </span>
-                <span className="text-xs leading-relaxed text-muted-foreground">
-                  {o.detail}
-                </span>
+                {o.detail && (
+                  <span className="text-xs leading-relaxed text-muted-foreground">
+                    {o.detail}
+                  </span>
+                )}
+                {o.bullets && (
+                  <ul className="ml-3 list-disc space-y-1 text-xs leading-relaxed text-muted-foreground">
+                    {o.bullets.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                )}
               </button>
             );
           })}
