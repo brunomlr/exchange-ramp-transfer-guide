@@ -47,7 +47,7 @@ export function RampPanel({
         </Field>
 
         <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-          <p className="mb-2 text-sm font-semibold text-foreground">
+          <p className="type-title mb-2 text-foreground">
             Intent — what the ramp watches for
           </p>
           <dl className="space-y-1.5 text-sm">
@@ -58,7 +58,7 @@ export function RampPanel({
               {accountType && (
                 <Badge
                   variant="outline"
-                  className="ml-1.5 h-4 px-1.5 text-[10px]"
+                  className="ml-1.5 h-4 px-1.5 text-2xs"
                 >
                   {accountType}
                 </Badge>
@@ -94,11 +94,11 @@ function Field({
       }
     >
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-sm font-semibold text-foreground">
+        <span className="type-title text-foreground">
           {label}
         </span>
         {badge && (
-          <Badge variant="default" className="h-4 px-1.5 text-[10px]">
+          <Badge variant="default" className="h-4 px-1.5 text-2xs">
             {badge}
           </Badge>
         )}

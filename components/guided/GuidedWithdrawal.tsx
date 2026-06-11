@@ -310,7 +310,7 @@ export function GuidedWithdrawal() {
 
       {/* Source: always the exchange's hot G account */}
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-        <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+        <div className="type-eyebrow mb-1.5 flex items-center gap-2 text-primary">
           <Landmark className="size-3.5" /> Source · exchange hot wallet (G)
         </div>
         <AddressChip
@@ -354,7 +354,7 @@ export function GuidedWithdrawal() {
           <code className="font-mono">transfer</code>.
         </p>
 
-        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+        <Label className="mb-1.5 block text-foreground">
           Destination account
         </Label>
         <div className="mb-4 grid grid-cols-2 gap-2">
@@ -378,7 +378,7 @@ export function GuidedWithdrawal() {
 
         {destType && (
           <>
-            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+            <Label className="mb-1.5 block text-foreground">
               Token
             </Label>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -398,7 +398,7 @@ export function GuidedWithdrawal() {
                 {selectedToken.note}
               </p>
             )}
-            <Label className="mt-3 mb-1.5 block text-sm font-semibold text-foreground">
+            <Label className="mt-3 mb-1.5 block text-foreground">
               Destination address
             </Label>
             <AddressChip
@@ -448,7 +448,7 @@ export function GuidedWithdrawal() {
           this transaction for the chosen model.
         </p>
 
-        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+        <Label className="mb-1.5 block text-foreground">
           Amount ({selectedToken?.symbol})
         </Label>
         <Input
@@ -632,17 +632,17 @@ function BuildExplainer({
   return (
     <div className="mt-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="gap-1 font-mono text-[10px]">
+        <Badge variant="outline" className="gap-1 font-mono text-2xs">
           <FileCode2 className="size-3" /> {op}
         </Badge>
-        <Badge variant="secondary" className="gap-1 text-[10px]">
+        <Badge variant="secondary" className="gap-1 text-2xs">
           <BadgeIcon className="size-3" />
           {isClassic ? "classic-native" : "contract-transfer"}
         </Badge>
       </div>
 
       <div className="rounded-lg border bg-muted/30 p-3">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="type-eyebrow mb-1.5 text-muted-foreground">
           How it&apos;s built
         </p>
         <ol className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -659,7 +659,7 @@ function BuildExplainer({
         {({ className, style, tokens, getLineProps, getTokenProps }) => (
           <pre
             className={cn(
-              "overflow-x-auto rounded-lg border p-3 text-[11px] leading-relaxed",
+              "overflow-x-auto rounded-lg border p-3 text-2xs leading-relaxed",
               className
             )}
             style={style}
@@ -813,7 +813,7 @@ function IdMethodPicker({
 }) {
   return (
     <div className="mt-5">
-      <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+      <Label className="mb-1.5 block text-foreground">
         Destination routing id (optional)
       </Label>
       <p className="mb-3 text-xs text-muted-foreground">
@@ -878,7 +878,7 @@ function IdMethodPicker({
 
       {idMethod !== "none" && (
         <div className="mt-3">
-          <Label className="mb-1.5 block text-xs font-semibold text-foreground">
+          <Label className="mb-1.5 block text-foreground">
             {idMethod === "muxed" ? "Muxed id" : "Memo id"} (64-bit, digits only)
           </Label>
           <Input
@@ -1082,7 +1082,7 @@ function TxCodeSnippet({
           {({ className, style, tokens, getLineProps, getTokenProps }) => (
             <pre
               className={cn(
-                "overflow-x-auto border-t p-3 text-[11px] leading-relaxed",
+                "overflow-x-auto border-t p-3 text-2xs leading-relaxed",
                 className
               )}
               style={style}
@@ -1116,7 +1116,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
 
       <div className="rounded-lg border p-3 text-xs">
         <div className="mb-1.5 flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-[10px]">
+          <Badge variant="outline" className="font-mono text-2xs">
             CAP-67 transfer event
           </Badge>
           {info.event ? (
@@ -1139,7 +1139,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
               ]
             </KV>
             <KV k="data">
-              <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-[11px] leading-relaxed">
+              <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-2xs leading-relaxed">
                 {info.event.dataRaw}
               </pre>
             </KV>

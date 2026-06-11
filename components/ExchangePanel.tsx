@@ -94,11 +94,11 @@ function Field({
       )}
     >
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-sm font-semibold text-foreground">
+        <span className="type-title text-foreground">
           {label}
         </span>
         {badge && (
-          <Badge variant="default" className="h-4 px-1.5 text-[10px]">
+          <Badge variant="default" className="h-4 px-1.5 text-2xs">
             {badge}
           </Badge>
         )}

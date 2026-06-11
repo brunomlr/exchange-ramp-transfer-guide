@@ -77,7 +77,7 @@ export function AccordionStep({
               {title}
             </span>
             {state === "done" && !open && (
-              <span className="text-[11px] font-medium text-emerald-600">
+              <span className="text-2xs font-medium text-emerald-600">
                 done
               </span>
             )}

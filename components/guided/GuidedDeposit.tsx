@@ -438,7 +438,7 @@ export function GuidedDeposit() {
           <DocLink doc="cap67">unified event stream</DocLink>.
         </p>
 
-        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+        <Label className="mb-1.5 block text-foreground">
           Source account
         </Label>
         <div className="mb-4 grid grid-cols-2 gap-2">
@@ -460,7 +460,7 @@ export function GuidedDeposit() {
 
         {accountType && (
           <>
-            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+            <Label className="mb-1.5 block text-foreground">
               Token
             </Label>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -486,7 +486,7 @@ export function GuidedDeposit() {
             )}
             {accountType && (
               <div className="mt-3">
-                <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+                <Label className="mb-1.5 block text-foreground">
                   User&apos;s external wallet address
                 </Label>
                 <AddressChip value={sourceAddr || "— not configured —"} />
@@ -597,14 +597,14 @@ export function GuidedDeposit() {
 
         {model === "ramp" && (
           <div className="mt-3">
-            <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <div className="type-title mb-1.5 flex items-center gap-1.5 text-foreground">
               <Target className="size-3.5" />
               What the ramp expects
             </div>
             <div className="rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
             <dl className="space-y-2">
               <div className="flex flex-col gap-1">
-                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                <dt className="type-eyebrow text-muted-foreground/70">
                   From your wallet
                 </dt>
                 <dd>
@@ -612,7 +612,7 @@ export function GuidedDeposit() {
                 </dd>
               </div>
               <div className="flex flex-col gap-1">
-                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                <dt className="type-eyebrow text-muted-foreground/70">
                   Amount
                 </dt>
                 <dd className="font-mono text-foreground">
@@ -635,7 +635,7 @@ export function GuidedDeposit() {
             choice; it drives both the destination and the preview below. */}
         {memoAllowed && (
           <div className="mt-3">
-            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+            <Label className="mb-1.5 block text-foreground">
               How the user addresses the deposit
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -692,7 +692,7 @@ export function GuidedDeposit() {
       >
         {/* The deposit intent (locked) */}
         <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+          <p className="type-eyebrow mb-2 text-primary">
             Deposit intent {isRamp ? "(ramp)" : "(exchange)"}
           </p>
           <dl className="space-y-1 text-sm">
@@ -736,7 +736,7 @@ export function GuidedDeposit() {
           <div className="grid grid-cols-[1fr_auto] gap-3">
             {!isRamp && (
               <div>
-                <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+                <Label className="mb-1.5 block text-foreground">
                   {idLabel}{" "}
                   <span className="font-normal">(arrives as to_muxed_id)</span>
                 </Label>
@@ -750,7 +750,7 @@ export function GuidedDeposit() {
               </div>
             )}
             <div className={isRamp ? "col-span-2" : ""}>
-              <Label className="mb-1.5 block text-sm font-semibold text-foreground">
+              <Label className="mb-1.5 block text-foreground">
                 Amount ({selectedToken?.symbol})
               </Label>
               <Input
@@ -777,7 +777,7 @@ export function GuidedDeposit() {
         {/* Destination preview */}
         {selectedToken?.enabled && (
           <div className="mt-3 rounded-lg border bg-muted/30 p-3">
-            <div className="mb-1 text-sm font-semibold text-foreground">
+            <div className="type-title mb-1 text-foreground">
               Destination
               {isRamp
                 ? " · ramp address (plain)"
@@ -935,7 +935,7 @@ function UserInstructionPreview({
   const displaySymbol = symbol === "SEP41" ? "TKN" : symbol;
   return (
     <div className="mt-4">
-      <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+      <div className="type-title mb-1.5 flex items-center gap-1.5 text-foreground">
         <Smartphone className="size-3.5" />
         Example of instructions an exchange would display to the user
       </div>
@@ -948,7 +948,7 @@ function UserInstructionPreview({
       */}
       <div className="pointer-events-none select-none overflow-hidden rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300">
         <div className="bg-slate-200/70 px-4 py-2.5 dark:bg-slate-800/70">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <p className="type-title text-slate-900 dark:text-slate-100">
             Deposit {displaySymbol}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -995,7 +995,7 @@ function UserInstructionPreview({
 function AppField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+      <p className="type-title mb-1 text-slate-900 dark:text-slate-100">
         {label}
       </p>
       <AppValue value={value} />

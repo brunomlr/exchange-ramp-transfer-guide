@@ -170,7 +170,7 @@ function DetectionSummary({
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
         )}
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold">
+          <p className="type-title">
             {ok ? "Deposit detected & matched" : "Detected, but it doesn’t match the intent"}
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -181,7 +181,7 @@ function DetectionSummary({
 
       {/* How detection happened — always visible, no expanding */}
       <div className="rounded-lg border bg-muted/30 p-3">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="type-eyebrow mb-1.5 text-muted-foreground">
           How it was detected
         </p>
         <ol className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -197,7 +197,7 @@ function DetectionSummary({
       {/* The actual on-chain event */}
       <div className="rounded-lg border p-3 text-xs">
         <div className="mb-1.5 flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-[10px]">
+          <Badge variant="outline" className="font-mono text-2xs">
             CAP-67 transfer event
           </Badge>
           <span className="font-mono font-medium">
@@ -209,7 +209,7 @@ function DetectionSummary({
           {t.asset}&quot;]
         </KV>
         <KV k="data">
-          <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-[11px] leading-relaxed">
+          <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-2xs leading-relaxed">
             {t.dataRaw}
           </pre>
         </KV>
@@ -312,7 +312,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
         The ramp uses{" "}
         <strong>no <DocLink doc="memo">memo</DocLink> or{" "}
         <DocLink doc="muxed">muxing</DocLink></strong>. It watches for a
-        transfer <code className="font-mono">from</code> the user&apos;s wallet (
+        transfer from the user&apos;s wallet (
         <code className="font-mono">{shorten(c.sourceAddr)}</code>) of exactly
         the intent amount (
         <code className="font-mono">{c.intentAmountStroops}</code> stroops) and
@@ -457,7 +457,7 @@ function ValueChip({
           : "border-amber-300 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/30"
       )}
     >
-      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="type-eyebrow text-muted-foreground">
         {label}
       </div>
       <div

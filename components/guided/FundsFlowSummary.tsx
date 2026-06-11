@@ -30,21 +30,21 @@ export function FundsFlowSummary({ direction }: { direction: FlowDirection }) {
 
   return (
     <div className="mb-5">
-      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="type-eyebrow mb-2.5 text-muted-foreground">
         Flow of funds
       </p>
       <div className="flex items-stretch gap-2 sm:gap-3">
         <FlowNode node={from} role="from" />
 
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-primary">
+          <span className="type-eyebrow text-primary">
             {isDeposit ? "Deposit" : "Withdrawal"}
           </span>
           <div className="flex w-full items-center">
             <span className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-primary/20 to-primary/60" />
             <ArrowRight className="-ml-1 size-4 shrink-0 text-primary" />
           </div>
-          <span className="truncate text-[10px] text-muted-foreground">
+          <span className="truncate text-2xs text-muted-foreground">
             funds move this way
           </span>
         </div>
@@ -83,7 +83,7 @@ function FlowNode({
         <Icon className="size-4" />
       </span>
       <span className="text-xs font-medium leading-tight">{node.title}</span>
-      <span className="text-[10px] leading-tight text-muted-foreground">
+      <span className="text-2xs leading-tight text-muted-foreground">
         {node.subtitle}
       </span>
     </div>

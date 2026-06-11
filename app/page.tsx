@@ -27,7 +27,7 @@ export default function GuidedLandingPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Guided flows</h1>
+        <h1 className="type-page-title">Guided flows</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Step-by-step walkthroughs of moving assets to and from a ramp or
           exchange on Stellar — built entirely on{" "}
@@ -48,7 +48,7 @@ export default function GuidedLandingPage() {
                 <Icon className="size-5" />
               </span>
               <div className="flex-1">
-                <h2 className="text-base font-semibold tracking-tight">
+                <h2 className="type-title">
                   {f.title}
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">

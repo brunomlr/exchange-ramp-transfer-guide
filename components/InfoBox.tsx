@@ -127,7 +127,7 @@ export function InfoBox({
             <span
               key={label}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium",
                 state === "active" &&
                   "border-primary bg-primary text-primary-foreground",
                 state === "done" &&
@@ -148,7 +148,7 @@ export function InfoBox({
           <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
             {copy.body}
           </p>
-          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
             {side === "left" ? (
               <>
                 <ArrowLeft className="size-3" /> interact on the left (user
