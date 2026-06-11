@@ -57,7 +57,7 @@ const G_TOKENS: TokenOption[] = [
   },
 ];
 
-/** Token choices for a Contract (C) source account — all via execute_as_admin. */
+/** Token choices for a Contract (C) source account — all driven by the contract. */
 const C_TOKENS: TokenOption[] = [
   {
     key: "xlm-sac",
@@ -66,7 +66,7 @@ const C_TOKENS: TokenOption[] = [
     contractId: XLM_SAC,
     mechanism: "contract-transfer",
     enabled: true,
-    note: "SAC token.transfer driven by the contract via execute_as_admin.",
+    note: "SAC token.transfer driven by the contract.",
   },
   {
     key: "usdc-sac",
@@ -76,7 +76,7 @@ const C_TOKENS: TokenOption[] = [
     mechanism: "contract-transfer",
     enabled: !!USDC_SAC,
     envVar: "NEXT_PUBLIC_USDC_SAC",
-    note: "USDC Stellar Asset Contract transfer via execute_as_admin.",
+    note: "USDC Stellar Asset Contract transfer driven by the contract.",
   },
   {
     key: "sep41",
@@ -86,7 +86,7 @@ const C_TOKENS: TokenOption[] = [
     mechanism: "contract-transfer",
     enabled: !!SEP41_TOKEN,
     envVar: "NEXT_PUBLIC_SEP41_TOKEN",
-    note: "Custom Soroban SEP-41 token transfer via execute_as_admin.",
+    note: "Custom Soroban SEP-41 token transfer driven by the contract.",
   },
 ];
 

@@ -173,7 +173,7 @@ export function UserWallet(props: Props) {
           <p className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
             Contract accounts always use a{" "}
             <DocLink doc="muxed"><strong>muxed</strong></DocLink>{" "}
-            destination — <DocLink doc="soroban">Soroban</DocLink> calls
+            destination — <DocLink doc="soroban">Soroban</DocLink>{" "}calls
             can&apos;t attach a classic <DocLink doc="memo">memo</DocLink>.
           </p>
         )}
