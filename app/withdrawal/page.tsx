@@ -1,7 +1,7 @@
 import { GuidedWithdrawal } from "@/components/guided/GuidedWithdrawal";
 
 export const metadata = {
-  title: "Guided withdrawal · Exchange Deposit Simulator",
+  title: "Guided crypto withdrawal · Exchange Deposit Simulator",
 };
 
 export default function GuidedWithdrawalPage() {
@@ -9,7 +9,7 @@ export default function GuidedWithdrawalPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
       <header className="mb-6">
         <h1 className="type-page-title">
-          Guided withdrawal
+          Guided crypto withdrawal
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           The exchange sends funds out of its own G account to a user&apos;s G

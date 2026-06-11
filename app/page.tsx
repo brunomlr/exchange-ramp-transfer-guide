@@ -11,14 +11,14 @@ const FLOWS = [
     href: "/deposit",
     icon: ArrowDownToLine,
     accent: "accent-deposit",
-    title: "Guided deposit",
+    title: "Guided crypto deposit",
     body: "A user sends funds to the ramp or exchange, then the ramp or exchange detects the deposit on-chain from the unified event stream — across the exchange and ramp models.",
   },
   {
     href: "/withdrawal",
     icon: ArrowUpFromLine,
     accent: "accent-withdrawal",
-    title: "Guided withdrawal",
+    title: "Guided crypto withdrawal",
     body: "The ramp or exchange sends funds out of its own G account to a user's G address or C address. See how the transaction is built and sent in each model — classic payment vs. contract transfer.",
   },
 ] as const;
