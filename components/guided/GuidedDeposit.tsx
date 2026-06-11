@@ -217,6 +217,8 @@ export function GuidedDeposit() {
   // ---- derived ----
   const tokens = accountType ? getTokensForAccount(accountType) : [];
   const selectedToken = tokens.find((t) => t.key === tokenKey);
+  const tokenLabel =
+    selectedToken?.symbol === "SEP41" ? "SEP-41 token" : selectedToken?.symbol;
   const sourceAddr = accountType === "C" ? USER_CONTRACT_C : USER_G;
   const isRamp = model === "ramp";
   const memoAllowed =
@@ -614,16 +616,16 @@ export function GuidedDeposit() {
                   Amount
                 </dt>
                 <dd className="font-mono text-foreground">
-                  {INTENT_AMOUNT} {selectedToken?.symbol}
+                  {INTENT_AMOUNT} {tokenLabel}
                 </dd>
               </div>
             </dl>
-            <p className="mt-2 text-[11px] text-muted-foreground/80">
+            <p className="mt-2">
               For this demo the intent is pinned to{" "}
-              <strong>{INTENT_AMOUNT} {selectedToken?.symbol}</strong> — this
-              matters for locked-token cases where the rate is quoted for an exact
-              amount. A ramp that doesn&apos;t need an amount match can drop that
-              comparison and match on the address alone.
+              <strong>{INTENT_AMOUNT} {tokenLabel}</strong>{" "}— this matters for
+              locked-token cases where the rate is quoted for an exact amount. A
+              ramp that doesn&apos;t need an amount match can drop that comparison
+              and match on the address alone.
             </p>
             </div>
           </div>

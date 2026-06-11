@@ -49,7 +49,7 @@ import type {
 } from "@/lib/flow";
 
 /** Default routing id used when the user opts into a memo / muxed id. */
-const DEFAULT_ID = "1";
+const DEFAULT_ID = "123456";
 
 /**
  * Which routing-id methods are valid for a given destination + mechanism.
@@ -478,6 +478,8 @@ export function GuidedWithdrawal() {
             tokenSymbol={selectedToken.symbol}
             mechanism={selectedToken.mechanism}
             amount={amountValid ? amount : "amount"}
+            idMethod={idMethod}
+            idValue={idValid && idValue ? idValue : ""}
           />
         )}
 
@@ -576,29 +578,56 @@ function BuildExplainer({
   tokenSymbol,
   mechanism,
   amount,
+  idMethod,
+  idValue,
 }: {
   destType: AccountType;
   tokenSymbol: string;
   mechanism: string;
   amount: string;
+  idMethod: WithdrawalIdMethod;
+  idValue: string;
 }) {
   const isClassic = mechanism === "classic-native";
+  const muxed = idMethod === "muxed" && destType === "G";
+  const memo = idMethod === "memo";
   const op = isClassic ? "payment" : "invokeHostFunction";
+  const id = idValue || "<id>";
+
+  // A muxed id is folded into the destination as an M… address (a tx-builder
+  // setup line); a memo is attached to the transaction, not the operation.
+  const muxSetup = muxed
+    ? `// fold the base G + id ${id} into one M… address\nconst destination = new MuxedAccount(USER_G, "${id}").accountId();\n\n`
+    : "";
+
   const pseudo = isClassic
-    ? `Operation.payment({
-  destination: USER_G,        // a Classic (G) address
-  asset: Asset.native(),      // XLM
-  amount: "${amount}",
-})`
-    : `// ${tokenSymbol} contract
-contract.call(
-  "transfer",
-  from: EXCHANGE_G,           // the exchange's own G account
-  to:   ${destType === "C" ? "USER_CONTRACT_C" : "USER_G"},${
-        destType === "C" ? "      // a Contract (C) address" : "                // a Classic (G) address"
+    ? `${muxSetup}const tx = new TransactionBuilder(source)
+  .addOperation(
+    Operation.payment({
+      destination: ${muxed ? "destination" : "USER_G"},${
+        muxed ? "    // the M… address" : "        // a Classic (G) address"
       }
-  amount: ${amount},
-)`;
+      asset: Asset.native(),      // XLM
+      amount: "${amount}",
+    })
+  )${memo ? `\n  .addMemo(Memo.id("${id}"))      // routing id on the tx, not the op` : ""}
+  .build();`
+    : `${muxSetup}const tx = new TransactionBuilder(source)
+  .addOperation(
+    contract.call(
+      "transfer",
+      EXCHANGE_G,${" ".repeat(14)}// from — the exchange's own G
+      ${
+        muxed
+          ? "destination,         // to — the M… address"
+          : destType === "C"
+            ? "USER_CONTRACT_C,     // to — a Contract (C) address"
+            : "USER_G,              // to — a Classic (G) address"
+      }
+      ${amount},
+    )
+  )
+  .build();`;
 
   return (
     <div className="mt-4 space-y-3">
@@ -617,7 +646,7 @@ contract.call(
           How it&apos;s built
         </p>
         <ol className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
-          {buildNarrative(destType, tokenSymbol, isClassic).map((line, i) => (
+          {buildNarrative(destType, tokenSymbol, isClassic, idMethod, idValue).map((line, i) => (
             <li key={i} className="flex gap-2">
               <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/50" />
               <span>{line}</span>
@@ -626,9 +655,25 @@ contract.call(
         </ol>
       </div>
 
-      <pre className="overflow-x-auto rounded-lg border bg-background p-3 font-mono text-[11px] leading-relaxed">
-        {pseudo}
-      </pre>
+      <Highlight theme={themes.nightOwl} code={pseudo} language="tsx">
+        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+          <pre
+            className={cn(
+              "overflow-x-auto rounded-lg border p-3 text-[11px] leading-relaxed",
+              className
+            )}
+            style={style}
+          >
+            {tokens.map((line, i) => (
+              <div key={i} {...getLineProps({ line })}>
+                {line.map((token, key) => (
+                  <span key={key} {...getTokenProps({ token })} />
+                ))}
+              </div>
+            ))}
+          </pre>
+        )}
+      </Highlight>
     </div>
   );
 }
@@ -636,17 +681,31 @@ contract.call(
 function buildNarrative(
   destType: AccountType,
   tokenSymbol: string,
-  isClassic: boolean
+  isClassic: boolean,
+  idMethod: WithdrawalIdMethod,
+  idValue: string
 ): React.ReactNode[] {
   const lines: React.ReactNode[] = [];
+  const muxed = idMethod === "muxed" && destType === "G";
+  const memo = idMethod === "memo";
+  const idDisplay = idValue || "the routing id";
+  const toClause = muxed ? (
+    <>
+      <code className="font-mono">to</code> the user&apos;s{" "}
+      <code className="font-mono">M…</code> address
+    </>
+  ) : (
+    <>
+      <code className="font-mono">to</code> the user&apos;s G address
+    </>
+  );
 
   if (isClassic) {
     lines.push(
       <>
         The exchange builds a single <strong>classic payment operation</strong>{" "}
         on its G account: <code className="font-mono">from</code> the exchange G,{" "}
-        <code className="font-mono">to</code> the user&apos;s G address, moving
-        native XLM. No contract call is involved.
+        {toClause}, moving native XLM. No contract call is involved.
       </>
     );
     lines.push(
@@ -675,7 +734,8 @@ function buildNarrative(
           The exchange invokes the {tokenSymbol} contract&apos;s{" "}
           <code className="font-mono">transfer</code> with{" "}
           <code className="font-mono">from</code> = its own G account and{" "}
-          <code className="font-mono">to</code> = the user&apos;s G address.
+          <code className="font-mono">to</code> = the user&apos;s{" "}
+          {muxed ? <code className="font-mono">M…</code> : "G"} address.
         </>
       );
     }
@@ -694,6 +754,28 @@ function buildNarrative(
         (to compute the <DocLink doc="soroban">Soroban</DocLink> footprint and
         resource fee), then signed and submitted over{" "}
         <DocLink doc="rpc">RPC</DocLink>.
+      </>
+    );
+  }
+
+  if (muxed) {
+    lines.push(
+      <>
+        Because the destination carries a routing id, the user&apos;s base G and
+        the id <code className="font-mono">{idDisplay}</code> are{" "}
+        <strong>folded together into a single muxed{" "}
+        <code className="font-mono">M…</code> address</strong>, used as the{" "}
+        <code className="font-mono">to</code>. The base G still receives the
+        funds — the id just rides along in the address.
+      </>
+    );
+  } else if (memo) {
+    lines.push(
+      <>
+        The routing id is added as a{" "}
+        <code className="font-mono">MemoID({idDisplay})</code> on the{" "}
+        <strong>payment transaction itself</strong> — the{" "}
+        <code className="font-mono">to</code> stays the plain G address.
       </>
     );
   }
@@ -815,18 +897,18 @@ function IdMethodPicker({
           <p className="mt-1.5 text-xs text-muted-foreground">
             {idMethod === "muxed" ? (
               <>
-                Folded into the destination as an{" "}
-                <code className="font-mono">M…</code> address. The base{" "}
-                <code className="font-mono">G</code> still receives the funds;
-                the id surfaces as <code className="font-mono">to_muxed_id</code>{" "}
-                on the transfer event.
+                The id is folded together with the base{" "}
+                <code className="font-mono">G</code> into a single{" "}
+                <code className="font-mono">M…</code> address, used as the
+                payment&apos;s <code className="font-mono">destination</code>. The
+                base <code className="font-mono">G</code> still receives the funds.
               </>
             ) : (
               <>
-                Sent as a <code className="font-mono">Memo.id</code> on the
-                payment. It surfaces as the same{" "}
-                <code className="font-mono">to_muxed_id</code> on the transfer
-                event — the legacy equivalent of a muxed id.
+                The destination stays the plain{" "}
+                <code className="font-mono">G</code> address; the id is attached
+                as a <code className="font-mono">MemoID</code> on the payment
+                transaction itself.
               </>
             )}
           </p>
