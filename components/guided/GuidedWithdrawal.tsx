@@ -283,7 +283,7 @@ export function GuidedWithdrawal() {
           <code className="font-mono">transfer</code>.
         </p>
 
-        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
           Destination account
         </Label>
         <div className="mb-4 grid grid-cols-2 gap-2">
@@ -307,7 +307,7 @@ export function GuidedWithdrawal() {
 
         {destType && (
           <>
-            <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
               Token
             </Label>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -327,7 +327,7 @@ export function GuidedWithdrawal() {
                 {selectedToken.note}
               </p>
             )}
-            <Label className="mt-3 mb-1.5 block text-xs font-medium text-muted-foreground">
+            <Label className="mt-3 mb-1.5 block text-sm font-semibold text-foreground">
               Destination address
             </Label>
             <AddressChip
@@ -375,7 +375,7 @@ export function GuidedWithdrawal() {
           this transaction for the chosen model.
         </p>
 
-        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
           Amount ({selectedToken?.symbol})
         </Label>
         <Input

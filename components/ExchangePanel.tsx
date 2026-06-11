@@ -94,7 +94,7 @@ function Field({
       )}
     >
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="text-sm font-semibold text-foreground">
           {label}
         </span>
         {badge && (

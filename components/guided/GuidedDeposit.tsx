@@ -425,15 +425,15 @@ export function GuidedDeposit() {
       >
         <p className="mb-4 text-sm text-muted-foreground">
           Pick where the deposit comes from and which token to send. A{" "}
-          <strong>Classic Account (G address)</strong> sends with a payment op or
-          a token call; a <strong>Contract Account (C address)</strong> invokes
-          the token via{" "}
-          <code className="font-mono">execute_as_admin</code>. Every choice is
-          detected from the same{" "}
+          <strong>Classic Account (G address)</strong> sends one of two ways — a{" "}
+          <strong>payment op</strong> or a <strong>token call</strong> — and a{" "}
+          <strong>Contract Account (C address)</strong> invokes the token via{" "}
+          <code className="font-mono">execute_as_admin</code>. All three of these
+          send paths surface identically in the{" "}
           <DocLink doc="cap67">unified event stream</DocLink>.
         </p>
 
-        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        <Label className="mb-1.5 block text-sm font-semibold text-foreground">
           Source account
         </Label>
         <div className="mb-4 grid grid-cols-2 gap-2">
@@ -455,7 +455,7 @@ export function GuidedDeposit() {
 
         {accountType && (
           <>
-            <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
               Token
             </Label>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -477,7 +477,7 @@ export function GuidedDeposit() {
             )}
             {accountType && (
               <div className="mt-3">
-                <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                <Label className="mb-1.5 block text-sm font-semibold text-foreground">
                   User&apos;s external wallet address
                 </Label>
                 <AddressChip value={sourceAddr || "— not configured —"} />
@@ -581,7 +581,7 @@ export function GuidedDeposit() {
             choice; it drives both the destination and the preview below. */}
         {memoAllowed && (
           <div className="mt-3">
-            <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            <Label className="mb-1.5 block text-sm font-semibold text-foreground">
               How the user addresses the deposit
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -682,7 +682,7 @@ export function GuidedDeposit() {
           <div className="grid grid-cols-[1fr_auto] gap-3">
             {!isRamp && (
               <div>
-                <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                <Label className="mb-1.5 block text-sm font-semibold text-foreground">
                   {idLabel}{" "}
                   <span className="font-normal">(arrives as to_muxed_id)</span>
                 </Label>
@@ -696,7 +696,7 @@ export function GuidedDeposit() {
               </div>
             )}
             <div className={isRamp ? "col-span-2" : ""}>
-              <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              <Label className="mb-1.5 block text-sm font-semibold text-foreground">
                 Amount ({selectedToken?.symbol})
               </Label>
               <Input
@@ -723,7 +723,7 @@ export function GuidedDeposit() {
         {/* Destination preview */}
         {selectedToken?.enabled && (
           <div className="mt-3 rounded-lg border bg-muted/30 p-3">
-            <div className="mb-1 text-xs font-medium text-muted-foreground">
+            <div className="mb-1 text-sm font-semibold text-foreground">
               Destination
               {isRamp
                 ? " · ramp address (plain)"
@@ -881,58 +881,81 @@ function UserInstructionPreview({
   const displaySymbol = symbol === "SEP41" ? "TKN" : symbol;
   return (
     <div className="mt-4">
-      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
         <Smartphone className="size-3.5" />
-        Example of what the user sees
+        Example of instructions an exchange would display to the user
       </div>
 
-      {/* device-like frame */}
-      <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
-        <div className="border-b bg-muted/40 px-4 py-2.5">
-          <p className="text-sm font-semibold">Deposit {displaySymbol}</p>
-          <p className="text-xs text-muted-foreground">Stellar network</p>
+      {/*
+        A representation of what the exchange would show the user — not part of
+        this simulator. Given its own tinted surface (slate) and made
+        non-interactive (pointer-events-none / select-none) so it reads as an
+        external screen, not UI to click.
+      */}
+      <div className="pointer-events-none select-none overflow-hidden rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+        <div className="bg-slate-200/70 px-4 py-2.5 dark:bg-slate-800/70">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Deposit {displaySymbol}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Stellar network
+          </p>
         </div>
+
         <div className="space-y-3 p-4">
-        {addressing === "memo" ? (
-          <>
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Deposit address
+          {addressing === "memo" ? (
+            <>
+              <AppField label="Deposit address" value={exchangeG} />
+              <div>
+                <p className="mb-1 flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-500">
+                  <AlertTriangle className="size-3" />
+                  Memo — required
+                </p>
+                <AppValue value={depositId} />
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Send with this exact memo. Deposits sent to the address{" "}
+                  <strong>without the memo can&apos;t be credited</strong> to
+                  your account.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <AppField label="Your deposit address" value={muxedAddr} />
+              <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <Info className="mt-0.5 size-3 shrink-0" />
+                <span>
+                  This address is unique to your account — no memo needed. Send
+                  any amount of {displaySymbol} to it.
+                </span>
               </p>
-              <AddressChip value={exchangeG || "— not configured —"} />
-            </div>
-            <div>
-              <p className="mb-1 flex items-center gap-1 text-xs font-medium text-amber-600">
-                <AlertTriangle className="size-3" />
-                Memo — required
-              </p>
-              <AddressChip value={depositId} />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Send with this exact memo. Deposits sent to the address{" "}
-                <strong>without the memo can&apos;t be credited</strong> to your
-                account.
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Your deposit address
-              </p>
-              <AddressChip value={muxedAddr || "— not configured —"} />
-            </div>
-            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <Info className="mt-0.5 size-3 shrink-0" />
-              <span>
-                This address is unique to your account — no memo needed. Send
-                any amount of {displaySymbol} to it.
-              </span>
-            </p>
-          </>
-        )}
+            </>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A labelled, read-only address row on the exchange's tinted surface. */
+function AppField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+        {label}
+      </p>
+      <AppValue value={value} />
+    </div>
+  );
+}
+
+/** Read-only address value box — no copy/interaction affordance. */
+function AppValue({ value }: { value: string }) {
+  return (
+    <div className="rounded-lg bg-white px-3 py-2.5 dark:bg-slate-950">
+      <span className="block break-all font-mono text-xs text-slate-700 dark:text-slate-300">
+        {value || "— not configured —"}
+      </span>
     </div>
   );
 }

@@ -47,7 +47,7 @@ export function RampPanel({
         </Field>
 
         <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
+          <p className="mb-2 text-sm font-semibold text-foreground">
             Intent — what the ramp watches for
           </p>
           <dl className="space-y-1.5 text-sm">
@@ -94,7 +94,7 @@ function Field({
       }
     >
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="text-sm font-semibold text-foreground">
           {label}
         </span>
         {badge && (

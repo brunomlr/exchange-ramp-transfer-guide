@@ -119,7 +119,7 @@ export function UserWallet(props: Props) {
       <CardContent className="space-y-5">
         {/* Source account */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground">
+          <Label className="text-sm font-semibold text-foreground">
             Source account
           </Label>
           <div className="grid grid-cols-2 gap-2">
@@ -149,7 +149,7 @@ export function UserWallet(props: Props) {
         {/* Addressing (Exchange model + G only) */}
         {model === "exchange" && accountType === "G" && (
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-semibold text-foreground">
               Addressing method
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -190,7 +190,7 @@ export function UserWallet(props: Props) {
         {accountType && model && (
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">
+              <Label className="text-sm font-semibold text-foreground">
                 Token
               </Label>
               <Select value={tokenKey} onValueChange={(v) => v && setTokenKey(v)}>
@@ -208,7 +208,7 @@ export function UserWallet(props: Props) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">
+              <Label className="text-sm font-semibold text-foreground">
                 Amount
               </Label>
               <Input
@@ -236,7 +236,7 @@ export function UserWallet(props: Props) {
         {/* Destination preview */}
         {accountType && model && selectedToken?.enabled && (
           <div className="rounded-lg border bg-muted/30 p-3">
-            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               Destination
               {isRamp && <span> · ramp address (plain)</span>}
               {!isRamp && effectiveAddressing === "memo" && (
