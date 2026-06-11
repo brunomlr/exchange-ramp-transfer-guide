@@ -1,0 +1,278 @@
+import { NextRequest, NextResponse } from "next/server";
+import * as StellarSdk from "@stellar/stellar-sdk";
+import {
+  RPC_URL,
+  networkPassphrase,
+  EXCHANGE_G,
+  USER_G,
+  USER_CONTRACT_C,
+  toStroops,
+} from "@/lib/stellar";
+import { findWithdrawalToken, type AccountType } from "@/lib/tokens";
+import { decodeTransferEvent } from "@/lib/events";
+import type { EmittedEvent } from "@/lib/flow";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+interface WithdrawRequest {
+  /** Where the funds are sent: a user G address or a user C (contract) address. */
+  destType: AccountType;
+  tokenKey: string;
+  amount: string;
+}
+
+const TRANSFER_TOPIC =
+  StellarSdk.xdr.ScVal.scvSymbol("transfer").toXDR("base64");
+
+/** Submit a tx via RPC (prepare first if it contains a Soroban op), then poll. */
+async function submitAndPoll(
+  server: StellarSdk.rpc.Server,
+  tx: StellarSdk.Transaction,
+  signers: StellarSdk.Keypair[]
+) {
+  const needsPrepare = tx.operations.some(
+    (op) => op.type === "invokeHostFunction"
+  );
+  let finalTx: StellarSdk.Transaction = tx;
+  if (needsPrepare) {
+    finalTx = await server.prepareTransaction(tx);
+  }
+  signers.forEach((s) => finalTx.sign(s));
+
+  const send = await server.sendTransaction(finalTx);
+  // sendTransaction only tells us whether the tx was *admitted* to the mempool.
+  // Anything other than PENDING/DUPLICATE means it never queued, so polling
+  // getTransaction would just spin until NOT_FOUND — surface a clear reason now.
+  if (send.status === "ERROR") {
+    throw new Error(
+      "RPC rejected the transaction: " +
+        JSON.stringify(send.errorResult ?? send, null, 2)
+    );
+  }
+  if (send.status === "TRY_AGAIN_LATER") {
+    throw new Error(
+      "The network asked to try again later (TRY_AGAIN_LATER) — it didn't queue the transaction. Send it again."
+    );
+  }
+
+  // PENDING (or DUPLICATE) → wait for it to land. A tx that was admitted but
+  // then dropped (e.g. a stale sequence) stays NOT_FOUND forever, so after the
+  // window we report that distinctly from an on-chain FAILED.
+  let result = await server.getTransaction(send.hash);
+  for (let i = 0; i < 45 && result.status === "NOT_FOUND"; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    result = await server.getTransaction(send.hash);
+  }
+  if (result.status === "NOT_FOUND") {
+    throw new Error(
+      `Transaction ${send.hash} was submitted but hasn't appeared on-chain. ` +
+        `It may still be pending or was dropped (often a duplicate submit). ` +
+        `Check it on the explorer, then send again if it never lands.`
+    );
+  }
+  if (result.status !== "SUCCESS") {
+    // FAILED — include the result so the on-chain reason is visible.
+    const detail =
+      "resultXdr" in result && result.resultXdr
+        ? " · " + result.resultXdr.toXDR("base64")
+        : "";
+    throw new Error(`Transaction ${send.hash} failed on-chain (${result.status})${detail}`);
+  }
+  return { hash: send.hash, ledger: result.ledger };
+}
+
+/**
+ * Read back the CAP-67 transfer event this withdrawal emitted. The tx is already
+ * confirmed, but the event index can lag a moment, so retry a few times. Returns
+ * null if it hasn't been indexed yet (the client falls back to the explorer).
+ */
+async function fetchEmittedEvent(
+  server: StellarSdk.rpc.Server,
+  opts: { contractId: string; from: string; startLedger: number; txHash: string }
+): Promise<EmittedEvent | null> {
+  // SACs emit a 4-topic transfer event ["transfer", from, to, sep0011_asset];
+  // custom SEP-41 tokens emit a 3-topic one ["transfer", from, to]. RPC matches
+  // a topic filter only when its segment count equals the event's — register both.
+  const filters: StellarSdk.rpc.Api.EventFilter[] = [
+    {
+      type: "contract",
+      contractIds: [opts.contractId],
+      topics: [
+        [TRANSFER_TOPIC, "*", "*", "*"],
+        [TRANSFER_TOPIC, "*", "*"],
+      ],
+    },
+  ];
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const res = await server.getEvents({
+        filters,
+        startLedger: opts.startLedger,
+        limit: 200,
+      } as StellarSdk.rpc.Server.GetEventsRequest);
+
+      for (const ev of res.events) {
+        const t = decodeTransferEvent(ev);
+        if (!t || t.from !== opts.from) continue;
+        // Prefer the exact tx when the RPC surfaces a txHash; otherwise the
+        // from + contract + ledger filter is specific enough for the demo.
+        if (t.txHash && t.txHash !== opts.txHash) continue;
+        return {
+          from: t.from,
+          to: t.to,
+          asset: t.asset,
+          amountDisplay: t.amountDisplay,
+          topicsRaw: t.topicsRaw,
+          dataRaw: t.dataRaw,
+          txHash: t.txHash,
+        };
+      }
+    } catch {
+      /* transient RPC error — retry */
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return null;
+}
+
+function humanSummary(
+  destType: AccountType,
+  tokenSymbol: string,
+  amount: string,
+  mechanism: string
+): string {
+  const dest =
+    destType === "G" ? "a user's Classic (G) address" : "a user's Contract (C) address";
+  if (mechanism === "classic-native") {
+    return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest} with a classic payment operation.`;
+  }
+  return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest} by invoking the token contract's transfer.`;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as WithdrawRequest;
+    const { destType, tokenKey, amount } = body;
+
+    if (!EXCHANGE_G) {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_EXCHANGE_G is not configured." },
+        { status: 500 }
+      );
+    }
+    const exchangeSecret = process.env.EXCHANGE_G_SECRET;
+    if (!exchangeSecret) {
+      return NextResponse.json(
+        { error: "EXCHANGE_G_SECRET is not configured (the exchange's signing key)." },
+        { status: 500 }
+      );
+    }
+
+    const token = findWithdrawalToken(destType, tokenKey);
+    if (!token) {
+      return NextResponse.json({ error: "Unknown token." }, { status: 400 });
+    }
+    if (!token.enabled || !token.contractId) {
+      return NextResponse.json(
+        { error: `Token "${token.label}" is not configured (set ${token.envVar}).` },
+        { status: 400 }
+      );
+    }
+
+    const destination = destType === "C" ? USER_CONTRACT_C : USER_G;
+    if (!destination) {
+      return NextResponse.json(
+        {
+          error:
+            destType === "C"
+              ? "NEXT_PUBLIC_USER_CONTRACT_C is not configured."
+              : "NEXT_PUBLIC_USER_G is not configured.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const exchange = StellarSdk.Keypair.fromSecret(exchangeSecret);
+    if (exchange.publicKey() !== EXCHANGE_G) {
+      return NextResponse.json(
+        { error: "EXCHANGE_G_SECRET does not match NEXT_PUBLIC_EXCHANGE_G." },
+        { status: 500 }
+      );
+    }
+
+    const server = new StellarSdk.rpc.Server(RPC_URL);
+    const source = await server.getAccount(exchange.publicKey());
+    const stroops = toStroops(amount || "1");
+
+    let built: { hash: string; ledger: number };
+
+    if (token.mechanism === "classic-native") {
+      // Classic XLM payment: exchange G account → user G address. (Only valid
+      // for a G destination — a contract can't receive a classic payment.)
+      const tx = new StellarSdk.TransactionBuilder(source, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase,
+      })
+        .addOperation(
+          StellarSdk.Operation.payment({
+            destination,
+            asset: StellarSdk.Asset.native(),
+            amount: amount || "1",
+          })
+        )
+        .setTimeout(120)
+        .build();
+      built = await submitAndPoll(server, tx, [exchange]);
+    } else {
+      // Contract transfer: the exchange G account invokes the token contract's
+      // `transfer` with from = exchange G. Being the tx source, its signature
+      // authorizes the move. Works for both G and C destinations.
+      const contract = new StellarSdk.Contract(token.contractId);
+      const tx = new StellarSdk.TransactionBuilder(source, {
+        // Inclusion fee ceiling (2,000,000 stroops = 0.2 XLM). This is NOT the
+        // total cost: submitAndPoll runs prepareTransaction(), which simulates
+        // the invocation and adds the Soroban resource fee on top of this value.
+        // We set it well above BASE_FEE (100 stroops) so the contract call won't
+        // be priced out under fee surges — you're only charged what's actually used.
+        fee: "2000000",
+        networkPassphrase,
+      })
+        .addOperation(
+          contract.call(
+            "transfer",
+            StellarSdk.Address.fromString(EXCHANGE_G).toScVal(),
+            StellarSdk.Address.fromString(destination).toScVal(),
+            StellarSdk.nativeToScVal(stroops, { type: "i128" })
+          )
+        )
+        .setTimeout(120)
+        .build();
+      built = await submitAndPoll(server, tx, [exchange]);
+    }
+
+    const event = await fetchEmittedEvent(server, {
+      contractId: token.contractId,
+      from: EXCHANGE_G,
+      startLedger: built.ledger,
+      txHash: built.hash,
+    });
+
+    return NextResponse.json({
+      hash: built.hash,
+      ledger: built.ledger,
+      source: EXCHANGE_G,
+      destination,
+      destType,
+      tokenSymbol: token.symbol,
+      mechanism: token.mechanism,
+      event,
+      confirmedOnChain: !!event,
+      summary: humanSummary(destType, token.symbol, amount || "1", token.mechanism),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
