@@ -30,7 +30,7 @@ function getCopy(
             <strong>Exchange model</strong> uses one shared omnibus account and a
             per-user deposit id (carried as a <DocLink doc="memo">memo</DocLink>{" "}
             or <DocLink doc="muxed">muxed id</DocLink>).{" "}
-            <strong>Ramp model</strong> creates a deposit intent pinned to the
+            <strong>Ramp model</strong>{" "}creates a deposit intent pinned to the
             user&apos;s wallet address, with an optional amount — typical when
             buying a different token at a locked rate. The choice decides the
             destination and how the payment is tracked.

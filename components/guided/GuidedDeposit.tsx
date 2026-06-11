@@ -428,9 +428,9 @@ export function GuidedDeposit() {
           Pick where the deposit comes from and which token to send. A{" "}
           <strong>Classic Account (G address)</strong> sends one of two ways — a{" "}
           <strong>payment op</strong> or a <strong>token call</strong> — and a{" "}
-          <strong>Contract Account (C address)</strong> invokes the token via{" "}
-          <code className="font-mono">execute_as_admin</code>. All three of these
-          send paths surface identically in the{" "}
+          <strong>Contract Account (C address)</strong> drives the token&apos;s{" "}
+          <code className="font-mono">transfer</code> through a contract call.
+          All three of these send paths surface identically in the{" "}
           <DocLink doc="cap67">unified event stream</DocLink>.
         </p>
 

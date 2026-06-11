@@ -700,7 +700,7 @@ function buildNarrative(
     </>
   ) : (
     <>
-      <code className="font-mono">to</code> the user&apos;s G address
+      <code className="font-mono">to</code>{" "}the user&apos;s G address
     </>
   );
 
@@ -717,7 +717,7 @@ function buildNarrative(
         It signs with the exchange&apos;s key and submits over{" "}
         <DocLink doc="rpc">RPC</DocLink> with{" "}
         <DocLink doc="sendTransaction" code>sendTransaction</DocLink> — no{" "}
-        <code className="font-mono">prepareTransaction</code> needed, since
+        <code className="font-mono">prepareTransaction</code>{" "}needed, since
         there&apos;s no <DocLink doc="soroban">Soroban</DocLink> footprint to compute.
       </>
     );
@@ -824,7 +824,7 @@ function IdMethodPicker({
         If the destination is itself custodial (say, another exchange) it may
         need an id to credit the right user. An <strong>account (G)</strong>{" "}
         carries that id in the address (muxed) or a memo; a{" "}
-        <strong>contract (C)</strong> can&apos;t — its id has to travel as an
+        <strong>contract (C)</strong>{" "}can&apos;t — its id has to travel as an
         argument inside the <code className="font-mono">transfer</code> call.
       </p>
 
@@ -858,8 +858,8 @@ function IdMethodPicker({
         <DisabledNote>
           <strong>Muxed and memo are off for a contract destination.</strong> A
           muxed address only wraps an <em>account</em> key, so a{" "}
-          <code className="font-mono">C…</code> address can&apos;t be muxed —
-          there is no <code className="font-mono">MuxedContract</code> form. A tx
+          <code className="font-mono">C…</code>{" "}address can&apos;t be muxed —
+          there is no <code className="font-mono">MuxedContract</code>{" "}form. A tx
           memo would ride along but the contract can&apos;t read it. For now,
           tagging a transfer to a contract means putting the id in the
           call&apos;s arguments (the contract has to expose a parameter for it)
@@ -903,7 +903,7 @@ function IdMethodPicker({
               <>
                 The id is folded together with the base{" "}
                 <code className="font-mono">G</code> into a single{" "}
-                <code className="font-mono">M…</code> address, used as the
+                <code className="font-mono">M…</code>{" "}address, used as the
                 payment&apos;s <code className="font-mono">destination</code>. The
                 base <code className="font-mono">G</code> still receives the funds.
               </>

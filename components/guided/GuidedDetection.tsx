@@ -243,7 +243,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
         The user sent {c.tokenSymbol} from a{" "}
         <strong>Contract Account (C address)</strong>, which invoked the
         token&apos;s <code className="font-mono">transfer</code>{" "}
-        via <code className="font-mono">execute_as_admin</code>.
+        through a contract call.
       </>
     );
   } else if (c.mechanism === "classic-native") {
@@ -257,7 +257,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
     lines.push(
       <>
         The user sent {c.tokenSymbol} from a{" "}
-        <strong>Classic Account (G address)</strong> by calling the token
+        <strong>Classic Account (G address)</strong>{" "}by calling the token
         contract&apos;s{" "}
         <code className="font-mono">transfer</code>.
       </>
@@ -298,7 +298,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
     }
     lines.push(
       <>
-        The exchange reads <code className="font-mono">to_muxed_id</code> from
+        The exchange reads <code className="font-mono">to_muxed_id</code>{" "}from
         every transfer and compares it to the user&apos;s deposit id (
         <code className="font-mono">{c.intentDepositId}</code>) — one universal
         check across XLM, <DocLink doc="sac">SAC</DocLink> and{" "}
@@ -334,7 +334,7 @@ function outcomeLine(
     return v.matched ? (
       <>
         <code className="font-mono">from</code> and{" "}
-        <code className="font-mono">amount</code> match the intent — the ramp
+        <code className="font-mono">amount</code>{" "}match the intent — the ramp
         ties the transfer to the user&apos;s deposit and the token purchase completes.
       </>
     ) : (
