@@ -276,14 +276,10 @@ export function GuidedDeposit() {
   function pickModel(value: TrackingModel) {
     if (value === model) return; // keep the addressing already chosen
     setModel(value);
-    // Default the addressing scheme for the only case that offers a choice:
-    // the exchange model with classic XLM from a G account. Everything else is
-    // muxed-only, so effectiveAddressing forces "muxed" regardless.
-    const allowsMemo =
-      value === "exchange" &&
-      accountType === "G" &&
-      selectedToken?.mechanism === "classic-native";
-    setAddressing(allowsMemo ? "memo" : "muxed");
+    // Default to the first addressing option ("muxed"). It's valid everywhere —
+    // the only case that even offers a choice is the exchange model with classic
+    // XLM from a G account, where the user can still switch to "memo".
+    setAddressing("muxed");
   }
 
   function confirmStep2() {

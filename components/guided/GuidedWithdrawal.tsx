@@ -229,10 +229,8 @@ export function GuidedWithdrawal() {
     setDestType(t);
     const first = getWithdrawalTokens(t).find((x) => x.enabled);
     setTokenKey(first?.key ?? "");
-    // Default to a muxed id for an account (G) destination — the modern way to
-    // route — and to no id for a contract (C), which can't be muxed.
-    const avail = idAvailability(t, first?.mechanism);
-    setIdMethod(avail.muxed ? "muxed" : "none");
+    // Default to the first id option ("none"). The user can switch to muxed/memo.
+    setIdMethod("none");
   }
   function pickToken(key: string) {
     setTokenKey(key);
@@ -1109,13 +1107,15 @@ function TxCodeSnippet({
 function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
   return (
     <div className="mt-3 space-y-3">
-      <Alert>
-        <CheckCircle2 className="size-4 text-blue-600" />
-        <AlertTitle>Sent to the network</AlertTitle>
-        <AlertDescription>
-          <span>{info.summary}</span>
-        </AlertDescription>
-      </Alert>
+      <div className="flex items-start gap-2.5 rounded-lg border border-emerald-300 bg-emerald-50/70 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+        <div className="space-y-0.5">
+          <p className="type-title">Sent to the network</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {info.summary}
+          </p>
+        </div>
+      </div>
 
       <div className="rounded-lg border p-3 text-xs">
         <div className="mb-1.5 flex items-center gap-2">
@@ -1146,11 +1146,12 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
                 {info.event.dataRaw}
               </pre>
             </KV>
-            <KV k="note">
-              <span className="text-muted-foreground">
+            <div className="mt-2 flex gap-1.5 text-xs leading-relaxed text-muted-foreground">
+              <span className="font-medium">note:</span>
+              <p className="break-words">
                 {info.event.toMuxedId ? (
                   <>
-                    <code className="font-mono">
+                    <code className="break-all font-mono">
                       to_muxed_id = {info.event.toMuxedId}
                     </code>{" "}
                     — the {info.idMethod === "memo" ? "memo" : "muxed"} id rode
@@ -1171,8 +1172,8 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
                     amount.
                   </>
                 )}
-              </span>
-            </KV>
+              </p>
+            </div>
           </>
         ) : (
           <p className="text-muted-foreground">
