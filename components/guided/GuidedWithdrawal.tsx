@@ -594,6 +594,9 @@ function BuildExplainer({
   const memo = idMethod === "memo";
   const op = isClassic ? "payment" : "invokeHostFunction";
   const id = idValue || "<id>";
+  // Contract transfer takes an i128 in the token's base units (stroops),
+  // unlike Operation.payment which takes a whole-unit decimal string.
+  const stroops = toStroops(Number(amount) > 0 ? amount : "0").toString();
 
   // A muxed id is folded into the destination as an M… address (a tx-builder
   // setup line); a memo is attached to the transaction, not the operation.
@@ -625,7 +628,7 @@ function BuildExplainer({
             ? "USER_CONTRACT_C,     // to — a Contract (C) address"
             : "USER_G,              // to — a Classic (G) address"
       }
-      ${amount},
+      ${stroops}n,${" ".repeat(Math.max(1, 14 - stroops.length))}// ${amount} ${tokenSymbol} in base units (i128, 7 decimals)
     )
   )
   .build();`;
