@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Favicon for the Ramps / Exchanges Deposit Simulator.
-// A downward arrow landing on a baseline = a deposit / on-ramp into an account.
+// Two opposing arrows = the exchange / swap mark (assets moving in and out).
 export const size = {
   width: 32,
   height: 32,
@@ -32,11 +32,12 @@ export default function Icon() {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {/* arrow shaft + head: funds moving down into the account */}
-          <path d="M12 3v11" />
-          <path d="M7 9.5l5 5 5-5" />
-          {/* baseline: the account / destination */}
-          <path d="M5 20h14" />
+          {/* top arrow: pointing right */}
+          <path d="M4 8.5h15" />
+          <path d="M15 4.5l4 4-4 4" />
+          {/* bottom arrow: pointing left */}
+          <path d="M20 15.5H5" />
+          <path d="M9 11.5l-4 4 4 4" />
         </svg>
       </div>
     ),
