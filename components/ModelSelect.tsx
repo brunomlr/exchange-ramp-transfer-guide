@@ -97,9 +97,11 @@ export function ModelSelect({
                   )}
                   {o.tagline}
                 </span>
-                <span className="text-xs leading-relaxed text-muted-foreground">
-                  {o.detail}
-                </span>
+                {o.detail && (
+                  <span className="text-xs leading-relaxed text-muted-foreground">
+                    {o.detail}
+                  </span>
+                )}
                 {o.bullets && (
                   <ul className="ml-3 list-disc space-y-1 text-xs leading-relaxed text-muted-foreground">
                     {o.bullets.map((b, i) => (

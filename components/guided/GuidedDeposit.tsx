@@ -593,6 +593,42 @@ export function GuidedDeposit() {
           </div>
         )}
 
+        {model === "ramp" && (
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Target className="size-3.5" />
+              What the ramp expects
+            </div>
+            <div className="rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+            <dl className="space-y-2">
+              <div className="flex flex-col gap-1">
+                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                  From your wallet
+                </dt>
+                <dd>
+                  <AddressChip value={sourceAddr || "— not configured —"} />
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                  Amount
+                </dt>
+                <dd className="font-mono text-foreground">
+                  {INTENT_AMOUNT} {selectedToken?.symbol}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-2 text-[11px] text-muted-foreground/80">
+              For this demo the intent is pinned to{" "}
+              <strong>{INTENT_AMOUNT} {selectedToken?.symbol}</strong> — this
+              matters for locked-token cases where the rate is quoted for an exact
+              amount. A ramp that doesn&apos;t need an amount match can drop that
+              comparison and match on the address alone.
+            </p>
+            </div>
+          </div>
+        )}
+
         {/* Addressing scheme — only the exchange + classic XLM case offers a
             choice; it drives both the destination and the preview below. */}
         {memoAllowed && (
