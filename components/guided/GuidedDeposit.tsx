@@ -563,34 +563,6 @@ export function GuidedDeposit() {
           })}
         </div>
 
-        {model && (
-          <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-            {model === "exchange" ? (
-              <>
-                <strong>Next:</strong>{" "}
-                the user sends to a per-user destination —
-                a <DocLink doc="muxed"><strong>muxed (M)</strong></DocLink> address,
-                or a <strong>G address + <DocLink doc="memo">memo</DocLink></strong>{" "}
-                for classic XLM. The id the user
-                sends arrives on-chain as <code className="font-mono">to_muxed_id</code>,
-                matched against the user&apos;s deposit id{" "}
-                <code className="font-mono">{DEPOSIT_ID}</code>.
-              </>
-            ) : (
-              <>
-                <strong>Next:</strong> the user sends{" "}
-                <strong>{INTENT_AMOUNT}</strong> {selectedToken?.symbol}{" "}
-                from the user&apos;s wallet to the ramp&apos;s plain address. The ramp matches the
-                intent on <code className="font-mono">from + amount</code> — no{" "}
-                <DocLink doc="memo">memo</DocLink> or{" "}
-                <DocLink doc="muxed">muxing</DocLink>. When the ramp is integrated into the wallet, the
-                integration already exposes the user&apos;s address, so the user
-                has nothing to copy, paste, or enter — they just confirm.
-              </>
-            )}
-          </div>
-        )}
-
         {model === "ramp" && (
           <div className="mt-3">
             <div className="type-title mb-1.5 flex items-center gap-1.5 text-foreground">
@@ -659,6 +631,34 @@ export function GuidedDeposit() {
             depositId={DEPOSIT_ID}
             muxedAddr={EXCHANGE_G ? muxedAddress(EXCHANGE_G, DEPOSIT_ID) : ""}
           />
+        )}
+
+        {model && (
+          <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+            {model === "exchange" ? (
+              <>
+                <strong>Next:</strong>{" "}
+                the user sends to a per-user destination —
+                a <DocLink doc="muxed"><strong>muxed (M)</strong></DocLink> address,
+                or a <strong>G address + <DocLink doc="memo">memo</DocLink></strong>{" "}
+                for classic XLM. The id the user
+                sends arrives on-chain as <code className="font-mono">to_muxed_id</code>,
+                matched against the user&apos;s deposit id{" "}
+                <code className="font-mono">{DEPOSIT_ID}</code>.
+              </>
+            ) : (
+              <>
+                <strong>Next:</strong> the user sends{" "}
+                <strong>{INTENT_AMOUNT}</strong> {selectedToken?.symbol}{" "}
+                from the user&apos;s wallet to the ramp&apos;s plain address. The ramp matches the
+                intent on <code className="font-mono">from + amount</code> — no{" "}
+                <DocLink doc="memo">memo</DocLink> or{" "}
+                <DocLink doc="muxed">muxing</DocLink>. When the ramp is integrated into the wallet, the
+                integration already exposes the user&apos;s address, so the user
+                has nothing to copy, paste, or enter — they just confirm.
+              </>
+            )}
+          </div>
         )}
 
         <StepAction
