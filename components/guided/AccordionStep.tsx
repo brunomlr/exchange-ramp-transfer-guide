@@ -5,6 +5,22 @@ import { cn } from "@/lib/utils";
 
 export type StepState = "done" | "active" | "upcoming";
 
+/** Hue for the completed-step styling. Deposit reads green, withdrawal blue. */
+const DONE_ACCENT = {
+  emerald: {
+    border: "border-emerald-300 dark:border-emerald-900/70",
+    bg: "bg-emerald-50/50 dark:bg-emerald-950/20",
+    icon: "bg-emerald-600 text-white",
+    text: "text-emerald-600",
+  },
+  blue: {
+    border: "border-blue-300 dark:border-blue-900/70",
+    bg: "bg-blue-50/50 dark:bg-blue-950/20",
+    icon: "bg-blue-600 text-white",
+    text: "text-blue-600",
+  },
+} as const;
+
 export function AccordionStep({
   index,
   title,
@@ -14,6 +30,7 @@ export function AccordionStep({
   summary,
   onToggle,
   children,
+  accent = "emerald",
 }: {
   index: number;
   title: string;
@@ -25,14 +42,16 @@ export function AccordionStep({
   summary?: React.ReactNode;
   onToggle: () => void;
   children: React.ReactNode;
+  /** Hue of the completed-step styling. Defaults to green. */
+  accent?: keyof typeof DONE_ACCENT;
 }) {
+  const done = DONE_ACCENT[accent];
   return (
     <div
       className={cn(
         "overflow-hidden rounded-xl border transition-colors",
         state === "active" && "border-primary/60 shadow-sm ring-1 ring-primary/20",
-        state === "done" &&
-          "border-emerald-300 dark:border-emerald-900/70",
+        state === "done" && done.border,
         state === "upcoming" && "border-border",
         locked && "opacity-60"
       )}
@@ -45,14 +64,14 @@ export function AccordionStep({
         className={cn(
           "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors",
           locked ? "cursor-not-allowed" : "hover:bg-muted/40",
-          state === "done" && "bg-emerald-50/50 dark:bg-emerald-950/20"
+          state === "done" && done.bg
         )}
       >
         <span
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
             state === "active" && "bg-primary text-primary-foreground",
-            state === "done" && "bg-emerald-600 text-white",
+            state === "done" && done.icon,
             state === "upcoming" &&
               "border border-border bg-muted text-muted-foreground"
           )}
@@ -77,7 +96,7 @@ export function AccordionStep({
               {title}
             </span>
             {state === "done" && !open && (
-              <span className="text-2xs font-medium text-emerald-600">
+              <span className={cn("text-2xs font-medium", done.text)}>
                 done
               </span>
             )}

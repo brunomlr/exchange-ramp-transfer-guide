@@ -326,6 +326,7 @@ export function GuidedWithdrawal() {
       {/* STEP 1 — Destination & token */}
       <AccordionStep
         index={1}
+        accent="blue"
         title="Destination & token"
         state={stateOf(1, step1Done)}
         open={openStep === 1}
@@ -425,6 +426,7 @@ export function GuidedWithdrawal() {
       {/* STEP 2 — Build the transaction */}
       <AccordionStep
         index={2}
+        accent="blue"
         title="Build the transaction"
         state={stateOf(2, step2Done)}
         locked={!canOpen(2)}
@@ -494,6 +496,7 @@ export function GuidedWithdrawal() {
       {/* STEP 3 — Send & confirm */}
       <AccordionStep
         index={3}
+        accent="blue"
         title="Send & confirm"
         state={stateOf(3, step3Done)}
         locked={!canOpen(3)}
@@ -501,7 +504,7 @@ export function GuidedWithdrawal() {
         onToggle={() => toggle(3)}
         summary={
           step3Done && sentInfo ? (
-            <span className="text-emerald-600">
+            <span className="text-blue-600">
               sent {amount} {selectedToken?.symbol}
             </span>
           ) : step2Done ? (
@@ -1107,7 +1110,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
   return (
     <div className="mt-3 space-y-3">
       <Alert>
-        <CheckCircle2 className="size-4 text-emerald-600" />
+        <CheckCircle2 className="size-4 text-blue-600" />
         <AlertTitle>Sent to the network</AlertTitle>
         <AlertDescription>
           <span>{info.summary}</span>
