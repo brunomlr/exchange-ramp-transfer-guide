@@ -29,7 +29,7 @@ import type {
 } from "@/lib/flow";
 
 export default function DepositFlow() {
-  const [mode, setMode] = useState<FlowMode>("deposit");
+  const [mode, setMode] = useState<FlowMode>("incoming");
   const [accountType, setAccountTypeRaw] = useState<AccountType | null>(null);
   const [model, setModelRaw] = useState<TrackingModel | null>(null);
   const [addressing, setAddressing] = useState<Addressing>("muxed");
@@ -74,7 +74,7 @@ export default function DepositFlow() {
     setSendError(null);
     setSentInfo(null);
     try {
-      // Arm the ramp intent: only count deposits from this ledger onward.
+      // Arm the ramp intent: only count incoming transfers from this ledger onward.
       if (model === "ramp") {
         try {
           const l = await rpcServer().getLatestLedger();
@@ -122,16 +122,20 @@ export default function DepositFlow() {
     <div className="space-y-5">
       <FlowToggle mode={mode} onModeChange={setMode} />
 
-      {mode === "withdrawal" ? (
+      {mode === "outgoing" ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-16 text-center">
             <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Clock className="size-5" />
             </span>
-            <p className="text-sm font-medium">Withdrawals are coming soon</p>
+            <p className="text-sm font-medium">
+              Outgoing crypto transfers are coming soon
+            </p>
             <p className="max-w-sm text-sm text-muted-foreground">
-              This simulator currently covers the deposit flow. Switch back to{" "}
-              <strong>Deposit</strong> to send and detect a payment.
+              This simulator currently covers incoming crypto transfers (crypto
+              arriving at the ramp or exchange). Switch back to{" "}
+              <strong>Incoming crypto transfer</strong> to send and detect a
+              payment.
             </p>
           </CardContent>
         </Card>

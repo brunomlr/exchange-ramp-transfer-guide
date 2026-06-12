@@ -26,7 +26,7 @@ export function RampPanel({
           <span className="flex size-7 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
             <ArrowLeftRight className="size-4" />
           </span>
-          Ramp — deposit intent
+          Ramp — off-ramp intent
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -34,7 +34,7 @@ export function RampPanel({
           The ramp creates an intent and tracks the exact{" "}
           <strong>source wallet</strong> and <strong>amount</strong>{" "}
           it expects. No <DocLink doc="memo">memo</DocLink> or{" "}
-          <DocLink doc="muxed">muxing</DocLink> — the deposit goes to the ramp&apos;s plain address.
+          <DocLink doc="muxed">muxing</DocLink> — the transfer goes to the ramp&apos;s plain address.
           This is the typical flow when buying a different token at a locked rate
           (rate handling is out of scope for this demo).
         </p>

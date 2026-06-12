@@ -15,7 +15,7 @@ function getCopy(
         title: "Step 1 — Choose the source account",
         body: (
           <>
-            Pick where the deposit comes from. A{" "}
+            Pick where the incoming transfer comes from. A{" "}
             <strong>Classic account (G…)</strong> sends with a normal payment
             operation; a <strong>Contract account (C…)</strong> sends by invoking
             a token contract. Both are detected from the same event stream.
@@ -30,7 +30,7 @@ function getCopy(
             <strong>Exchange model</strong> uses one shared omnibus account and a
             per-user deposit id (carried as a <DocLink doc="memo">memo</DocLink>{" "}
             or <DocLink doc="muxed">muxed id</DocLink>).{" "}
-            <strong>Ramp model</strong>{" "}creates a deposit intent pinned to the
+            <strong>Ramp model</strong>{" "}creates an off-ramp intent pinned to the
             user&apos;s wallet address, with an optional amount — typical when
             buying a different token at a locked rate. The choice decides the
             destination and how the payment is tracked.
@@ -40,7 +40,7 @@ function getCopy(
     case 3:
       return model === "ramp"
         ? {
-            title: "Step 3 — Set the amount for the user's deposit intent",
+            title: "Step 3 — Set the amount for the user's off-ramp intent",
             body: (
               <>
                 Choose a token and amount. The ramp arms an intent watching for a
@@ -66,7 +66,7 @@ function getCopy(
           };
     case 4:
       return {
-        title: "Step 4 — Send the deposit",
+        title: "Step 4 — Send the transfer",
         body: (
           <>
             The transaction is built, signed, and submitted via{" "}

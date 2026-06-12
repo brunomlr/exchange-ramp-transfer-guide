@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ramps / Exchanges Deposit Simulator",
+  title: "Ramps / Exchanges Transfer Simulator",
   description:
-    "Simulate Stellar ramp and exchange deposits and detect them in real time via RPC unified asset events (no Horizon).",
+    "Simulate incoming and outgoing crypto transfers for Stellar ramps and exchanges and detect them in real time via RPC unified asset events (no Horizon).",
 };
 
 export default function RootLayout({

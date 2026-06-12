@@ -7,7 +7,7 @@ export type SendStatus = "idle" | "sending" | "success" | "error";
 /**
  * How the Ramp/Exchange identifies which user a deposit belongs to.
  * - exchange: one shared omnibus account + a per-user id (memo / muxed id).
- * - ramp:     a deposit intent that pins the user's wallet address + amount.
+ * - ramp:     an off-ramp intent that pins the user's wallet address + amount.
  */
 export type TrackingModel = "exchange" | "ramp";
 
@@ -73,7 +73,7 @@ export interface WithdrawalSentInfo {
 export const STEPS = [
   "Choose source",
   "Choose model",
-  "Configure deposit",
+  "Configure transfer",
   "Send",
   "Detect",
 ] as const;

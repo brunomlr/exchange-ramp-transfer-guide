@@ -48,17 +48,19 @@ import type {
   TrackingModel,
 } from "@/lib/flow";
 
-/** The fixed, exchange/ramp-assigned deposit intent for this demo. */
+/** The fixed, exchange/ramp-assigned intent for this demo. */
 const INTENT_AMOUNT = "1";
 
 /** localStorage key for resuming the guided flow across refreshes. */
-const STORAGE_KEY = "guided-deposit-state-v1";
+const STORAGE_KEY = "guided-incoming-state-v1";
 
 const MODEL_OPTIONS: {
   value: TrackingModel;
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   tagline: string;
+  /** What this incoming crypto transfer means to the user in this model. */
+  meaning: string;
   detail?: string;
   bullets?: string[];
 }[] = [
@@ -67,6 +69,7 @@ const MODEL_OPTIONS: {
     title: "Exchange model",
     icon: Landmark,
     tagline: "One omnibus account + a per-user id",
+    meaning: "Deposit — the user funds their account.",
     detail:
       "All users deposit to a single shared account. Each user gets a deposit id carried as a memo or muxed id, and the deposit is matched on to_muxed_id.",
   },
@@ -74,15 +77,16 @@ const MODEL_OPTIONS: {
     value: "ramp",
     title: "Ramp model",
     icon: ArrowLeftRight,
-    tagline: "Tracking a wallet or a deposit intent",
+    tagline: "Tracking a wallet or an off-ramp intent",
+    meaning: "Off-ramp — the user sends crypto and receives fiat.",
     bullets: [
-      "Persistent address tracking — any incoming deposit from the user's address is processed automatically.",
-      "A single deposit intent on the user's account, optionally pinned to an amount — used for locked-token cases where the deposit must match exactly.",
+      "Persistent address tracking — any incoming crypto transfer from the user's address is processed automatically.",
+      "A single off-ramp intent on the user's account, optionally pinned to an amount — used for locked-token cases where the transfer must match exactly.",
     ],
   },
 ];
 
-export function GuidedDeposit() {
+export function GuidedIncoming() {
   // Step 1
   const [accountType, setAccountType] = useState<AccountType | null>(null);
   const [tokenKey, setTokenKey] = useState("");
@@ -217,10 +221,7 @@ export function GuidedDeposit() {
   // ---- derived ----
   const tokens = accountType ? getTokensForAccount(accountType) : [];
   const selectedToken = tokens.find((t) => t.key === tokenKey);
-  const tokenLabel =
-    selectedToken?.symbol === "SEP41" ? "SEP-41 token" : selectedToken?.symbol;
   const sourceAddr = accountType === "C" ? USER_CONTRACT_C : USER_G;
-  const isRamp = model === "ramp";
   const memoAllowed =
     model === "exchange" &&
     accountType === "G" &&
@@ -238,6 +239,23 @@ export function GuidedDeposit() {
     !!committed2 &&
     (committed2.model !== model ||
       committed2.addressing !== effectiveAddressing);
+
+  // Effective (committed) values — these, not the live inputs, drive every
+  // downstream "next-steps" display (the user-instruction preview, the "Next"
+  // note, the destination, the detection case) and the actual send. So
+  // revisiting a step and changing a selection never alters what's shown for
+  // later steps until the user clicks the step's button to re-commit. Before a
+  // step's first commit there's no snapshot, so we fall back to the live draft.
+  const effAccountType = committed1?.accountType ?? accountType;
+  const effTokenKey = committed1?.tokenKey ?? tokenKey;
+  const effTokens = effAccountType ? getTokensForAccount(effAccountType) : [];
+  const effToken = effTokens.find((t) => t.key === effTokenKey);
+  const effTokenLabel =
+    effToken?.symbol === "SEP41" ? "SEP-41 token" : effToken?.symbol;
+  const effSourceAddr = effAccountType === "C" ? USER_CONTRACT_C : USER_G;
+  const effModel = committed2?.model ?? model;
+  const effIsRamp = effModel === "ramp";
+  const effAddressing: Addressing = committed2?.addressing ?? effectiveAddressing;
 
   // ---- resets ----
   function resetSend() {
@@ -299,17 +317,17 @@ export function GuidedDeposit() {
   const idValid = /^\d+$/.test(sentDepositId);
   const amountValid = Number(sentAmount) > 0;
   const canSend =
-    !!accountType &&
-    !!model &&
-    !!selectedToken?.enabled &&
+    !!effAccountType &&
+    !!effModel &&
+    !!effToken?.enabled &&
     amountValid &&
-    (isRamp || idValid) &&
+    (effIsRamp || idValid) &&
     sendStatus !== "sending";
 
-  const idChanged = !isRamp && sentDepositId !== DEPOSIT_ID;
+  const idChanged = !effIsRamp && sentDepositId !== DEPOSIT_ID;
   // Only the ramp model matches on amount; the exchange matches on the id alone.
   const amountChanged =
-    isRamp && amountValid && toStroops(sentAmount) !== toStroops(INTENT_AMOUNT);
+    effIsRamp && amountValid && toStroops(sentAmount) !== toStroops(INTENT_AMOUNT);
 
   async function onSend() {
     if (!canSend) return;
@@ -323,11 +341,11 @@ export function GuidedDeposit() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountType,
-          tokenKey,
+          accountType: effAccountType,
+          tokenKey: effTokenKey,
           amount: sentAmount,
-          addressing: effectiveAddressing,
-          model,
+          addressing: effAddressing,
+          model: effModel,
           depositId: sentDepositId,
         }),
       });
@@ -345,21 +363,21 @@ export function GuidedDeposit() {
   // muxed destination preview built from the *sent* id (may be the wrong one).
   const muxedPreview =
     EXCHANGE_G && idValid ? muxedAddress(EXCHANGE_G, sentDepositId) : "";
-  const destination = isRamp
+  const destination = effIsRamp
     ? EXCHANGE_G
-    : effectiveAddressing === "memo"
+    : effAddressing === "memo"
       ? EXCHANGE_G
       : muxedPreview;
 
   const detectionCase: DetectionCase | null =
-    accountType && model && selectedToken
+    effAccountType && effModel && effToken
       ? {
-          accountType,
-          mechanism: selectedToken.mechanism,
-          model,
-          addressing: effectiveAddressing,
-          tokenSymbol: selectedToken.symbol,
-          sourceAddr,
+          accountType: effAccountType,
+          mechanism: effToken.mechanism,
+          model: effModel,
+          addressing: effAddressing,
+          tokenSymbol: effToken.symbol,
+          sourceAddr: effSourceAddr,
           intentDepositId: DEPOSIT_ID,
           intentAmountStroops: toStroops(INTENT_AMOUNT).toString(),
           sentDepositId,
@@ -395,12 +413,12 @@ export function GuidedDeposit() {
     setOpenStep((cur) => (cur === n ? 0 : n));
   }
 
-  const idLabel = effectiveAddressing === "memo" ? "Memo id" : "Muxed id";
+  const idLabel = effAddressing === "memo" ? "Memo id" : "Muxed id";
 
   return (
     <div className="space-y-3">
       {/* Summary — which way the funds move in this flow */}
-      <FundsFlowSummary direction="deposit" />
+      <FundsFlowSummary direction="incoming" />
 
       {/* STEP 1 — User account type & token */}
       <AccordionStep
@@ -425,7 +443,7 @@ export function GuidedDeposit() {
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          Pick where the deposit comes from and which token to send. A{" "}
+          Pick where the incoming transfer comes from and which token to send. A{" "}
           <strong>Classic Account (G address)</strong> sends one of two ways — a{" "}
           <strong>payment op</strong> or a <strong>token call</strong> — and a{" "}
           <strong>Contract Account (C address)</strong> drives the token&apos;s{" "}
@@ -515,7 +533,8 @@ export function GuidedDeposit() {
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          Choose how the Ramp/Exchange identifies the user&apos;s deposit. This
+          Choose how the Ramp/Exchange identifies the user&apos;s incoming
+          transfer. This
           decides the destination and what gets matched on-chain.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -546,6 +565,9 @@ export function GuidedDeposit() {
                   )}
                   {o.tagline}
                 </span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
+                  Incoming transfer = {o.meaning}
+                </span>
                 {o.detail && (
                   <span className="text-xs leading-relaxed text-muted-foreground">
                     {o.detail}
@@ -563,7 +585,7 @@ export function GuidedDeposit() {
           })}
         </div>
 
-        {model === "ramp" && (
+        {effModel === "ramp" && (
           <div className="mt-3">
             <div className="type-title mb-1.5 flex items-center gap-1.5 text-foreground">
               <Target className="size-3.5" />
@@ -576,7 +598,7 @@ export function GuidedDeposit() {
                   From your wallet
                 </dt>
                 <dd>
-                  <AddressChip value={sourceAddr || "— not configured —"} />
+                  <AddressChip value={effSourceAddr || "— not configured —"} />
                 </dd>
               </div>
               <div className="flex flex-col gap-1">
@@ -584,13 +606,13 @@ export function GuidedDeposit() {
                   Amount
                 </dt>
                 <dd className="font-mono text-foreground">
-                  {INTENT_AMOUNT} {tokenLabel}
+                  {INTENT_AMOUNT} {effTokenLabel}
                 </dd>
               </div>
             </dl>
             <p className="mt-2">
               For this demo the intent is pinned to{" "}
-              <strong>{INTENT_AMOUNT} {tokenLabel}</strong>{" "}— this matters for
+              <strong>{INTENT_AMOUNT} {effTokenLabel}</strong>{" "}— this matters for
               locked-token cases where the rate is quoted for an exact amount. A
               ramp that doesn&apos;t need an amount match can drop that comparison
               and match on the address alone.
@@ -604,7 +626,7 @@ export function GuidedDeposit() {
         {memoAllowed && (
           <div className="mt-3">
             <Label className="mb-1.5 block text-foreground">
-              How the user addresses the deposit
+              How the user addresses the transfer
             </Label>
             <div className="grid grid-cols-2 gap-2">
               <RadioCard
@@ -623,19 +645,19 @@ export function GuidedDeposit() {
           </div>
         )}
 
-        {model === "exchange" && selectedToken && (
+        {effModel === "exchange" && effToken && (
           <UserInstructionPreview
-            symbol={selectedToken.symbol ?? "the token"}
-            addressing={effectiveAddressing}
+            symbol={effToken.symbol ?? "the token"}
+            addressing={effAddressing}
             exchangeG={EXCHANGE_G}
             depositId={DEPOSIT_ID}
             muxedAddr={EXCHANGE_G ? muxedAddress(EXCHANGE_G, DEPOSIT_ID) : ""}
           />
         )}
 
-        {model && (
+        {effModel && (
           <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-            {model === "exchange" ? (
+            {effModel === "exchange" ? (
               <>
                 <strong>Next:</strong>{" "}
                 the user sends to a per-user destination —
@@ -649,7 +671,7 @@ export function GuidedDeposit() {
             ) : (
               <>
                 <strong>Next:</strong> the user sends{" "}
-                <strong>{INTENT_AMOUNT}</strong> {selectedToken?.symbol}{" "}
+                <strong>{INTENT_AMOUNT}</strong> {effToken?.symbol}{" "}
                 from the user&apos;s wallet to the ramp&apos;s plain address. The ramp matches the
                 intent on <code className="font-mono">from + amount</code> — no{" "}
                 <DocLink doc="memo">memo</DocLink> or{" "}
@@ -680,30 +702,30 @@ export function GuidedDeposit() {
         summary={
           step3Done && sentInfo ? (
             <>
-              Sent {sentAmount} {selectedToken?.symbol}
-              {!isRamp && ` · ${idLabel.toLowerCase()} ${sentDepositId}`}
+              Sent {sentAmount} {effToken?.symbol}
+              {!effIsRamp && ` · ${idLabel.toLowerCase()} ${sentDepositId}`}
             </>
           ) : undefined
         }
       >
-        {/* The deposit intent (locked) */}
+        {/* The intent (locked) — deposit (exchange) or off-ramp (ramp) */}
         <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
           <p className="type-eyebrow mb-2 text-primary">
-            Deposit intent {isRamp ? "(ramp)" : "(exchange)"}
+            {effIsRamp ? "Off-ramp intent (ramp)" : "Deposit intent (exchange)"}
           </p>
           <dl className="space-y-1 text-sm">
-            {!isRamp ? (
+            {!effIsRamp ? (
               <IntentRow k="Deposit id">
                 <code className="font-mono">{DEPOSIT_ID}</code>
               </IntentRow>
             ) : (
               <>
                 <IntentRow k="From (the user's wallet)">
-                  <code className="font-mono">{shortenSafe(sourceAddr)}</code>
+                  <code className="font-mono">{shortenSafe(effSourceAddr)}</code>
                 </IntentRow>
                 <IntentRow k="Expected amount">
                   <code className="font-mono">
-                    {INTENT_AMOUNT} {selectedToken?.symbol}
+                    {INTENT_AMOUNT} {effToken?.symbol}
                   </code>
                 </IntentRow>
               </>
@@ -713,7 +735,7 @@ export function GuidedDeposit() {
 
         <p className="mb-3 text-sm text-muted-foreground">
           This is what the user will actually send.{" "}
-          {isRamp ? (
+          {effIsRamp ? (
             <>
               Leave the amount as-is to match the intent, or change it to
               simulate a user mistake.
@@ -730,7 +752,7 @@ export function GuidedDeposit() {
         {/* Editable fields */}
         <div className="space-y-3">
           <div className="grid grid-cols-[1fr_auto] gap-3">
-            {!isRamp && (
+            {!effIsRamp && (
               <div>
                 <Label className="mb-1.5 block text-foreground">
                   {idLabel}{" "}
@@ -745,9 +767,9 @@ export function GuidedDeposit() {
                 />
               </div>
             )}
-            <div className={isRamp ? "col-span-2" : ""}>
+            <div className={effIsRamp ? "col-span-2" : ""}>
               <Label className="mb-1.5 block text-foreground">
-                Amount ({selectedToken?.symbol})
+                Amount ({effToken?.symbol})
               </Label>
               <Input
                 type="number"
@@ -755,7 +777,7 @@ export function GuidedDeposit() {
                 step="0.0000001"
                 value={sentAmount}
                 onChange={(e) => setSentAmount(e.target.value)}
-                className={isRamp ? "w-40" : "w-28"}
+                className={effIsRamp ? "w-40" : "w-28"}
               />
             </div>
           </div>
@@ -765,19 +787,19 @@ export function GuidedDeposit() {
         {(idChanged || amountChanged) && (
           <Alert variant="destructive" className="mt-3">
             <AlertTriangle className="size-4" />
-            <AlertTitle>This won&apos;t match the deposit intent</AlertTitle>
+            <AlertTitle>This won&apos;t match the intent</AlertTitle>
             <AlertDescription>{mismatchMessage()}</AlertDescription>
           </Alert>
         )}
 
         {/* Destination preview */}
-        {selectedToken?.enabled && (
+        {effToken?.enabled && (
           <div className="mt-3 rounded-lg border bg-muted/30 p-3">
             <div className="type-title mb-1 text-foreground">
               Destination
-              {isRamp
+              {effIsRamp
                 ? " · ramp address (plain)"
-                : effectiveAddressing === "memo"
+                : effAddressing === "memo"
                   ? ` · memo id ${sentDepositId}`
                   : " · muxed"}
             </div>
@@ -829,7 +851,7 @@ export function GuidedDeposit() {
       {/* STEP 4 — Detection */}
       <AccordionStep
         index={4}
-        title="Deposit detection"
+        title="Transfer detection"
         state={stateOf(
           4,
           detectionMatched !== null
@@ -883,13 +905,13 @@ export function GuidedDeposit() {
   );
 
   function mismatchMessage(): React.ReactNode {
-    if (isRamp) {
+    if (effIsRamp) {
       return (
         <>
           The payment will still be sent, but since the amount ({sentAmount}{" "}
-          {selectedToken?.symbol}) doesn&apos;t match the intent ({INTENT_AMOUNT}{" "}
-          {selectedToken?.symbol}), the ramp will receive the funds but{" "}
-          <strong>won&apos;t complete the deposit intent or token purchase</strong>.
+          {effToken?.symbol}) doesn&apos;t match the intent ({INTENT_AMOUNT}{" "}
+          {effToken?.symbol}), the ramp will receive the funds but{" "}
+          <strong>won&apos;t complete the off-ramp intent or token purchase</strong>.
         </>
       );
     }

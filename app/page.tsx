@@ -8,18 +8,26 @@ export const metadata = {
 
 const FLOWS = [
   {
-    href: "/deposit",
+    href: "/incoming",
     icon: ArrowDownToLine,
-    accent: "accent-deposit",
-    title: "Guided crypto deposit",
-    body: "A user sends funds to the ramp or exchange, then the ramp or exchange detects the deposit on-chain from the unified event stream — across the exchange and ramp models.",
+    accent: "accent-incoming",
+    title: "Incoming crypto transfer",
+    body: "The user sends crypto to the ramp or exchange, which detects it on-chain from the unified event stream — across the exchange and ramp models.",
+    mapping: [
+      { model: "Exchange model", meaning: "Deposit — the user funds their account." },
+      { model: "Ramp model", meaning: "Off-ramp — the user sends crypto and receives fiat." },
+    ],
   },
   {
-    href: "/withdrawal",
+    href: "/outgoing",
     icon: ArrowUpFromLine,
-    accent: "accent-withdrawal",
-    title: "Guided crypto withdrawal",
-    body: "The ramp or exchange sends funds out of its own G account to a user's G address or C address. See how the transaction is built and sent in each model — classic payment vs. contract transfer.",
+    accent: "accent-outgoing",
+    title: "Outgoing crypto transfer",
+    body: "The ramp or exchange sends crypto out of its own G account to a user's G address or C address. See how the transaction is built and sent in each model — classic payment vs. contract transfer.",
+    mapping: [
+      { model: "Exchange model", meaning: "Withdrawal — the user pulls funds out." },
+      { model: "Ramp model", meaning: "On-ramp — the user pays fiat and receives crypto." },
+    ],
   },
 ] as const;
 
@@ -29,9 +37,11 @@ export default function GuidedLandingPage() {
       <header className="mb-6">
         <h1 className="type-page-title">Guided flows</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Step-by-step walkthroughs of moving assets to and from a ramp or
+          Step-by-step walkthroughs of moving crypto to and from a ramp or
           exchange on Stellar — built entirely on{" "}
-          <DocLink doc="rpc">RPC</DocLink>. Pick a direction.
+          <DocLink doc="rpc">RPC</DocLink>. Flows are named by the direction of
+          the crypto transfer relative to the ramp/exchange; what that means for
+          the user depends on the model.
         </p>
       </header>
 
@@ -54,6 +64,14 @@ export default function GuidedLandingPage() {
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {f.body}
                 </p>
+                <dl className="mt-3 space-y-1.5 border-t pt-3">
+                  {f.mapping.map((m) => (
+                    <div key={m.model} className="text-xs leading-relaxed">
+                      <dt className="font-medium text-foreground/80">{m.model}</dt>
+                      <dd className="text-muted-foreground">{m.meaning}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
               <span className="flex items-center gap-1 text-sm font-medium text-primary">
                 Start

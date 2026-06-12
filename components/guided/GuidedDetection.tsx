@@ -171,7 +171,7 @@ function DetectionSummary({
         )}
         <div className="space-y-0.5">
           <p className="type-title">
-            {ok ? "Deposit detected & matched" : "Detected, but it doesn’t match the intent"}
+            {ok ? "Transfer detected & matched" : "Detected, but it doesn’t match the intent"}
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {outcomeLine(c, verdict, intentAmount, sentAmount)}

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export type StepState = "done" | "active" | "upcoming";
 
-/** Hue for the completed-step styling. Deposit reads green, withdrawal blue. */
+/** Hue for the completed-step styling. Incoming reads green, outgoing blue. */
 const DONE_ACCENT = {
   emerald: {
     border: "border-emerald-300 dark:border-emerald-900/70",

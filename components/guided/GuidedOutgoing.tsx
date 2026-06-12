@@ -82,9 +82,9 @@ function normalizeIdMethod(
 const DEFAULT_AMOUNT = "1";
 
 /** localStorage key for resuming the guided withdrawal across refreshes. */
-const STORAGE_KEY = "guided-withdrawal-state-v1";
+const STORAGE_KEY = "guided-outgoing-state-v1";
 
-export function GuidedWithdrawal() {
+export function GuidedOutgoing() {
   // Step 1
   const [destType, setDestType] = useState<AccountType | null>(null);
   const [tokenKey, setTokenKey] = useState("");
@@ -212,6 +212,24 @@ export function GuidedWithdrawal() {
       committed2.idMethod !== idMethod ||
       committed2.idValue !== idValue);
 
+  // Effective (committed) values — these, not the live inputs, drive every
+  // downstream "next-steps" display (the build explainer, the SDK snippet) and
+  // the actual send. So revisiting a step and changing a selection never alters
+  // what's shown for later steps until the user clicks the step's button to
+  // re-commit. Before a step's first commit there's no snapshot yet, so we fall
+  // back to the live draft — the build preview while the button still reads
+  // "Next".
+  const effDestType = committed1?.destType ?? destType;
+  const effTokenKey = committed1?.tokenKey ?? tokenKey;
+  const effTokens = effDestType ? getWithdrawalTokens(effDestType) : [];
+  const effToken = effTokens.find((t) => t.key === effTokenKey);
+  const effMechanism = effToken?.mechanism;
+  const effAmount = committed2?.amount ?? amount;
+  const effIdMethod = committed2?.idMethod ?? idMethod;
+  const effIdValue = committed2?.idValue ?? idValue;
+  const effAmountValid = Number(effAmount) > 0;
+  const effIdValid = effIdMethod === "none" || /^\d+$/.test(effIdValue);
+
   // ---- resets ----
   function resetSend() {
     setSendStatus("idle");
@@ -248,7 +266,7 @@ export function GuidedWithdrawal() {
 
   // ---- step 2 ----
   const amountValid = Number(amount) > 0;
-  const idAvail = idAvailability(destType, selectedToken?.mechanism);
+  const idAvail = idAvailability(effDestType, effMechanism);
   const idValid = idMethod === "none" || /^\d+$/.test(idValue);
   const canConfirm2 = amountValid && idValid;
   function confirmStep2() {
@@ -260,7 +278,7 @@ export function GuidedWithdrawal() {
 
   // ---- step 3 ----
   const canSend =
-    step1Done && step2Done && canConfirm2 && sendStatus !== "sending";
+    step1Done && step2Done && effAmountValid && effIdValid && sendStatus !== "sending";
 
   async function onSend() {
     if (!canSend) return;
@@ -271,14 +289,20 @@ export function GuidedWithdrawal() {
       const res = await fetch("/api/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destType, tokenKey, amount, idMethod, idValue }),
+        body: JSON.stringify({
+          destType: effDestType,
+          tokenKey: effTokenKey,
+          amount: effAmount,
+          idMethod: effIdMethod,
+          idValue: effIdValue,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Withdrawal failed");
+      if (!res.ok) throw new Error(data.error || "Transfer failed");
       setSentInfo(data as WithdrawalSentInfo);
       setSendStatus("success");
     } catch (e) {
-      setSendError(e instanceof Error ? e.message : "Withdrawal failed");
+      setSendError(e instanceof Error ? e.message : "Transfer failed");
       setSendStatus("error");
     }
   }
@@ -299,12 +323,10 @@ export function GuidedWithdrawal() {
     setOpenStep((cur) => (cur === n ? 0 : n));
   }
 
-  const mechanism = selectedToken?.mechanism;
-
   return (
     <div className="space-y-3">
       {/* Summary — which way the funds move in this flow */}
-      <FundsFlowSummary direction="withdrawal" />
+      <FundsFlowSummary direction="outgoing" />
 
       {/* Source: always the exchange's hot G account */}
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
@@ -316,8 +338,8 @@ export function GuidedWithdrawal() {
           href={EXCHANGE_G ? explorerAccountUrl(EXCHANGE_G) : undefined}
         />
         <p className="mt-2 text-xs text-muted-foreground">
-          Every withdrawal is signed by and sent from the exchange&apos;s Classic
-          (G) account. Only the destination and token change.
+          Every outgoing transfer is signed by and sent from the ramp/exchange&apos;s
+          Classic (G) account. Only the destination and token change.
         </p>
       </div>
 
@@ -433,8 +455,8 @@ export function GuidedWithdrawal() {
         summary={
           step2Done && committed2 ? (
             <>
-              {committed2.amount} {selectedToken?.symbol} ·{" "}
-              {mechanism === "classic-native"
+              {committed2.amount} {effToken?.symbol} ·{" "}
+              {effMechanism === "classic-native"
                 ? "classic payment"
                 : "contract transfer"}
               {committed2.idMethod !== "none" &&
@@ -449,7 +471,7 @@ export function GuidedWithdrawal() {
         </p>
 
         <Label className="mb-1.5 block text-foreground">
-          Amount ({selectedToken?.symbol})
+          Amount ({effToken?.symbol})
         </Label>
         <Input
           type="number"
@@ -460,9 +482,9 @@ export function GuidedWithdrawal() {
           className="w-40"
         />
 
-        {destType && (
+        {effDestType && (
           <IdMethodPicker
-            destType={destType}
+            destType={effDestType}
             avail={idAvail}
             idMethod={idMethod}
             idValue={idValue}
@@ -472,14 +494,14 @@ export function GuidedWithdrawal() {
           />
         )}
 
-        {selectedToken && destType && (
+        {effToken && effDestType && (
           <BuildExplainer
-            destType={destType}
-            tokenSymbol={selectedToken.symbol}
-            mechanism={selectedToken.mechanism}
-            amount={amountValid ? amount : "amount"}
-            idMethod={idMethod}
-            idValue={idValid && idValue ? idValue : ""}
+            destType={effDestType}
+            tokenSymbol={effToken.symbol}
+            mechanism={effToken.mechanism}
+            amount={effAmountValid ? effAmount : "amount"}
+            idMethod={effIdMethod}
+            idValue={effIdValid && effIdValue ? effIdValue : ""}
           />
         )}
 
@@ -503,7 +525,7 @@ export function GuidedWithdrawal() {
         summary={
           step3Done && sentInfo ? (
             <span className="text-blue-600">
-              sent {amount} {selectedToken?.symbol}
+              sent {effAmount} {effToken?.symbol}
             </span>
           ) : step2Done ? (
             "ready to send"
@@ -517,15 +539,15 @@ export function GuidedWithdrawal() {
           receiving user) reads.
         </p>
 
-        {selectedToken && destType && (
+        {effToken && effDestType && (
           <TxCodeSnippet
-            destType={destType}
-            tokenKey={tokenKey}
-            tokenSymbol={selectedToken.symbol}
-            mechanism={selectedToken.mechanism}
-            amount={amountValid ? amount : "1"}
-            idMethod={idMethod}
-            idValue={idValid && idValue ? idValue : DEFAULT_ID}
+            destType={effDestType}
+            tokenKey={effTokenKey}
+            tokenSymbol={effToken.symbol}
+            mechanism={effToken.mechanism}
+            amount={effAmountValid ? effAmount : "1"}
+            idMethod={effIdMethod}
+            idValue={effIdValid && effIdValue ? effIdValue : DEFAULT_ID}
           />
         )}
 
@@ -540,14 +562,14 @@ export function GuidedWithdrawal() {
             </>
           ) : (
             <>
-              Send withdrawal <ArrowUpFromLine className="size-4" />
+              Send outgoing transfer <ArrowUpFromLine className="size-4" />
             </>
           )}
         </Button>
 
         {sendStatus === "error" && sendError && (
           <Alert variant="destructive" className="mt-3">
-            <AlertTitle>Withdrawal failed</AlertTitle>
+            <AlertTitle>Transfer failed</AlertTitle>
             <AlertDescription className="break-all">{sendError}</AlertDescription>
           </Alert>
         )}
@@ -1171,7 +1193,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
                 ) : (
                   <>
                     No <code className="font-mono">to_muxed_id</code> — the
-                    withdrawal went to a plain address, so the data is just the
+                    transfer went to a plain address, so the data is just the
                     amount.
                   </>
                 )}

@@ -75,7 +75,7 @@ export function EventStream({
             <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
               <Radio className="size-4" />
             </span>
-            Live deposit detection
+            Live transfer detection
           </span>
           <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
             <span className="relative flex size-2">
@@ -109,7 +109,7 @@ export function EventStream({
             </>
           ) : (
             <>
-              <strong>Ramp model:</strong> we match the deposit intent —{" "}
+              <strong>Ramp model:</strong> we match the off-ramp intent —{" "}
               <code className="font-mono">from</code> equals the user&apos;s wallet and{" "}
               <code className="font-mono">amount</code> equals{" "}
               <code className="font-mono">{matcher.amountStroops}</code> stroops.
@@ -173,7 +173,7 @@ function EventRow({
           <div className="flex items-center gap-2">
             {matched ? (
               <Badge className="gap-1 bg-emerald-600 text-white">
-                <CheckCircle2 className="size-3" /> deposit detected
+                <CheckCircle2 className="size-3" /> transfer detected
               </Badge>
             ) : (
               <Badge variant="outline">incoming</Badge>

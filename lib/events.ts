@@ -22,7 +22,7 @@ import { fromStroops } from "@/lib/stellar";
  *
  * The same event stream feeds two identification models (see `matchTransfer`):
  *   - exchange: match `to_muxed_id` against a per-user deposit id.
- *   - ramp:     match the deposit intent — `from` wallet + exact `amount`.
+ *   - ramp:     match the off-ramp intent — `from` wallet + exact `amount`.
  */
 
 export interface DetectedTransfer {

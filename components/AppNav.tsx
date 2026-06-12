@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/deposit", label: "Guided crypto deposit" },
-  { href: "/withdrawal", label: "Guided crypto withdrawal" },
+  { href: "/incoming", label: "Incoming crypto transfer" },
+  { href: "/outgoing", label: "Outgoing crypto transfer" },
 ];
 
 export function AppNav() {

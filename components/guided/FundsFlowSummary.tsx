@@ -3,7 +3,7 @@
 import { Wallet, Landmark, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type FlowDirection = "deposit" | "withdrawal";
+type FlowDirection = "incoming" | "outgoing";
 
 const USER_NODE = {
   icon: Wallet,
@@ -19,11 +19,11 @@ const EXCHANGE_NODE = {
 
 /**
  * A compact, at-a-glance summary of which way the funds move in this flow:
- * deposit = user → ramp/exchange, withdrawal = ramp/exchange → user.
+ * incoming = user → ramp/exchange, outgoing = ramp/exchange → user.
  * Purely illustrative — it frames the steps below, it doesn't drive them.
  */
 export function FundsFlowSummary({ direction }: { direction: FlowDirection }) {
-  const isDeposit = direction === "deposit";
+  const isDeposit = direction === "incoming";
   // Funds always flow left → right in the diagram; only the endpoints swap.
   const from = isDeposit ? USER_NODE : EXCHANGE_NODE;
   const to = isDeposit ? EXCHANGE_NODE : USER_NODE;
@@ -31,21 +31,21 @@ export function FundsFlowSummary({ direction }: { direction: FlowDirection }) {
   return (
     <div className="mb-5">
       <p className="type-eyebrow mb-2.5 text-muted-foreground">
-        Flow of funds
+        Flow of crypto
       </p>
       <div className="flex items-stretch gap-2 sm:gap-3">
         <FlowNode node={from} role="from" />
 
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1">
           <span className="type-eyebrow text-primary">
-            {isDeposit ? "Deposit" : "Withdrawal"}
+            {isDeposit ? "Incoming" : "Outgoing"}
           </span>
           <div className="flex w-full items-center">
             <span className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-primary/20 to-primary/60" />
             <ArrowRight className="-ml-1 size-4 shrink-0 text-primary" />
           </div>
           <span className="truncate text-2xs text-muted-foreground">
-            funds move this way
+            crypto moves this way
           </span>
         </div>
 

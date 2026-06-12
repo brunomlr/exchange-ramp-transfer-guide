@@ -11,6 +11,8 @@ const OPTIONS: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   tagline: string;
+  /** What this incoming crypto transfer means to the user in this model. */
+  meaning: string;
   detail?: string;
   bullets?: string[];
 }[] = [
@@ -19,6 +21,7 @@ const OPTIONS: {
     title: "Exchange model",
     icon: Landmark,
     tagline: "One omnibus account + a per-user id",
+    meaning: "Deposit — the user funds their account.",
     detail:
       "All users deposit to a single shared account. Each user gets a deposit id carried as a memo or muxed id, and the deposit is matched on to_muxed_id.",
   },
@@ -26,10 +29,11 @@ const OPTIONS: {
     value: "ramp",
     title: "Ramp model",
     icon: ArrowLeftRight,
-    tagline: "Tracking a wallet or a deposit intent",
+    tagline: "Tracking a wallet or an off-ramp intent",
+    meaning: "Off-ramp — the user sends crypto and receives fiat.",
     bullets: [
-      "Persistent address tracking — any incoming deposit from the user's address is processed automatically.",
-      "A single deposit intent on the user's account, optionally pinned to an amount — used for locked-token cases where the deposit must match exactly.",
+      "Persistent address tracking — any incoming crypto transfer from the user's address is processed automatically.",
+      "A single off-ramp intent on the user's account, optionally pinned to an amount — used for locked-token cases where the transfer must match exactly.",
     ],
   },
 ];
@@ -66,7 +70,8 @@ export function ModelSelect({
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Choose how the Ramp/Exchange identifies the user&apos;s deposit. This
+          Choose how the Ramp/Exchange identifies the user&apos;s incoming
+          transfer. This
           decides the destination and how the payment is tracked.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -96,6 +101,9 @@ export function ModelSelect({
                     <Target className="size-3" />
                   )}
                   {o.tagline}
+                </span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
+                  Incoming transfer = {o.meaning}
                 </span>
                 {o.detail && (
                   <span className="text-xs leading-relaxed text-muted-foreground">

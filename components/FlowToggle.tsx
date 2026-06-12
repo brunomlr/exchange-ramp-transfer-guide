@@ -2,7 +2,7 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export type FlowMode = "deposit" | "withdrawal";
+export type FlowMode = "incoming" | "outgoing";
 
 export function FlowToggle({
   mode,
@@ -18,8 +18,8 @@ export function FlowToggle({
       className="w-full"
     >
       <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="deposit">Deposit</TabsTrigger>
-        <TabsTrigger value="withdrawal">Withdrawal</TabsTrigger>
+        <TabsTrigger value="incoming">Incoming crypto transfer</TabsTrigger>
+        <TabsTrigger value="outgoing">Outgoing crypto transfer</TabsTrigger>
       </TabsList>
     </Tabs>
   );
