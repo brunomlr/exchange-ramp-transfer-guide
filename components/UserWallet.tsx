@@ -170,7 +170,7 @@ export function UserWallet(props: Props) {
           </div>
         )}
         {model === "exchange" && accountType === "C" && (
-          <p className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
             Contract accounts always use a{" "}
             <DocLink doc="muxed"><strong>muxed</strong></DocLink>{" "}
             destination — <DocLink doc="soroban">Soroban</DocLink>{" "}calls
@@ -178,7 +178,7 @@ export function UserWallet(props: Props) {
           </p>
         )}
         {isRamp && accountType && (
-          <p className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
             Ramp model: no <DocLink doc="memo">memo</DocLink> or{" "}
             <DocLink doc="muxed">muxing</DocLink>. The user sends to the ramp&apos;s plain
             address; it identifies the user by <strong>source wallet</strong>,
@@ -317,8 +317,9 @@ function AccountButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={cn(
-        "flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors",
+        "relative flex flex-col items-start rounded-lg border px-3 py-2 pr-9 text-left transition-colors",
         active
           ? "border-primary bg-primary/5 ring-1 ring-primary/30"
           : "hover:bg-muted/50",
@@ -327,6 +328,9 @@ function AccountButton({
     >
       <span className="text-sm font-medium">{title}</span>
       <span className="text-xs text-muted-foreground">{subtitle}</span>
+      {active && (
+        <CheckCircle2 className="absolute top-2.5 right-3 size-4 text-primary" />
+      )}
     </button>
   );
 }

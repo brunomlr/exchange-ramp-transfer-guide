@@ -37,12 +37,12 @@ export function FundsFlowSummary({ direction }: { direction: FlowDirection }) {
         <FlowNode node={from} role="from" />
 
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1">
-          <span className="type-eyebrow text-primary">
+          <span className="type-eyebrow text-flow">
             {isDeposit ? "Incoming" : "Outgoing"}
           </span>
           <div className="flex w-full items-center">
-            <span className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-primary/20 to-primary/60" />
-            <ArrowRight className="-ml-1 size-4 shrink-0 text-primary" />
+            <span className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-flow/20 to-flow/60" />
+            <ArrowRight className="-ml-1 size-4 shrink-0 text-flow" />
           </div>
           <span className="truncate text-2xs text-muted-foreground">
             crypto moves this way
@@ -68,7 +68,7 @@ function FlowNode({
       className={cn(
         "flex flex-1 flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center",
         role === "to"
-          ? "border-primary/40 bg-primary/5"
+          ? "border-flow/40 bg-flow/5"
           : "border-border bg-background"
       )}
     >
@@ -76,7 +76,7 @@ function FlowNode({
         className={cn(
           "flex size-8 items-center justify-center rounded-full",
           role === "to"
-            ? "bg-primary text-primary-foreground"
+            ? "bg-flow text-flow-foreground"
             : "bg-muted text-muted-foreground"
         )}
       >

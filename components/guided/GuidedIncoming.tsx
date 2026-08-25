@@ -24,6 +24,7 @@ import { AddressChip } from "@/components/AddressChip";
 import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
+import { FlowProgress } from "@/components/guided/FlowProgress";
 import {
   GuidedDetection,
   type DetectionCase,
@@ -231,6 +232,13 @@ export function GuidedIncoming() {
   const step1Done = !!committed1;
   const step2Done = !!committed2;
   const step3Done = sendStatus === "success" && !!sentInfo;
+  const completedSteps =
+    Number(step1Done) +
+    Number(step2Done) +
+    Number(step3Done) +
+    Number(detectionMatched !== null);
+  const currentProgressStep =
+    openStep || (!step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : 4);
 
   const step1Changed =
     !!committed1 &&
@@ -416,9 +424,14 @@ export function GuidedIncoming() {
   const idLabel = effAddressing === "memo" ? "Memo id" : "Muxed id";
 
   return (
-    <div className="space-y-3">
+    <div className="flow-incoming space-y-3">
       {/* Summary — which way the funds move in this flow */}
       <FundsFlowSummary direction="incoming" />
+      <FlowProgress
+        direction="incoming"
+        currentStep={currentProgressStep}
+        completedSteps={completedSteps}
+      />
 
       {/* STEP 1 — User account type & token */}
       <AccordionStep
@@ -490,7 +503,7 @@ export function GuidedIncoming() {
               ))}
             </div>
             {selectedToken && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {selectedToken.note}{" "}
                 <span className="italic">
                   However it&apos;s sent, it surfaces as the same transfer event
@@ -546,13 +559,17 @@ export function GuidedIncoming() {
                 key={o.value}
                 type="button"
                 onClick={() => pickModel(o.value)}
+                aria-pressed={selected}
                 className={cn(
-                  "flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors",
+                  "relative flex flex-col gap-1.5 rounded-lg border p-3 pr-9 text-left transition-colors",
                   selected
                     ? "border-primary bg-primary/5 ring-1 ring-primary/30"
                     : "hover:bg-muted/50"
                 )}
               >
+                {selected && (
+                  <CheckCircle2 className="absolute top-3 right-3 size-4 text-primary" />
+                )}
                 <div className="flex items-center gap-2">
                   <Icon className="size-4 text-primary" />
                   <span className="text-sm font-medium">{o.title}</span>
@@ -569,12 +586,12 @@ export function GuidedIncoming() {
                   Incoming transfer = {o.meaning}
                 </span>
                 {o.detail && (
-                  <span className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="text-sm leading-relaxed text-muted-foreground">
                     {o.detail}
                   </span>
                 )}
                 {o.bullets && (
-                  <ul className="ml-3 list-disc space-y-1 text-xs leading-relaxed text-muted-foreground">
+                  <ul className="ml-3 list-disc space-y-1 text-sm leading-relaxed text-muted-foreground">
                     {o.bullets.map((b, i) => (
                       <li key={i}>{b}</li>
                     ))}
@@ -591,7 +608,7 @@ export function GuidedIncoming() {
               <Target className="size-3.5" />
               What the ramp expects
             </div>
-            <div className="rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+            <div className="rounded-lg bg-muted/50 p-3 text-sm leading-relaxed text-muted-foreground">
             <dl className="space-y-2">
               <div className="flex flex-col gap-1">
                 <dt className="type-eyebrow text-muted-foreground/70">
@@ -656,7 +673,7 @@ export function GuidedIncoming() {
         )}
 
         {effModel && (
-          <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+          <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm leading-relaxed text-muted-foreground">
             {effModel === "exchange" ? (
               <>
                 <strong>Next:</strong>{" "}
@@ -794,7 +811,7 @@ export function GuidedIncoming() {
 
         {/* Destination preview */}
         {effToken?.enabled && (
-          <div className="mt-3 rounded-lg border bg-muted/30 p-3">
+          <div className="mt-3 rounded-lg bg-muted/50 p-3">
             <div className="type-title mb-1 text-foreground">
               Destination
               {effIsRamp
@@ -1089,7 +1106,7 @@ function RadioCard({
       disabled={disabled}
       aria-pressed={active}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
+        "flex min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
         active
           ? "border-primary bg-primary/5 ring-1 ring-primary/30"
           : "hover:bg-muted/50",
@@ -1097,7 +1114,7 @@ function RadioCard({
       )}
     >
       {icon && <span className="text-primary">{icon}</span>}
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{title}</span>
         {subtitle && (
           <span className="block truncate text-xs text-muted-foreground">
@@ -1105,6 +1122,7 @@ function RadioCard({
           </span>
         )}
       </span>
+      {active && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
     </button>
   );
 }

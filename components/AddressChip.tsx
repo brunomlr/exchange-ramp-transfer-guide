@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface AddressChipProps {
@@ -17,10 +18,14 @@ export function AddressChip({
   value,
   href,
   className,
-  full = true,
+  full = false,
   mono = true,
 }: AddressChipProps) {
   const [copied, setCopied] = useState(false);
+  const displayedValue =
+    full || value.length <= 30
+      ? value
+      : `${value.slice(0, 14)}…${value.slice(-10)}`;
 
   async function copy() {
     try {
@@ -41,26 +46,28 @@ export function AddressChip({
     >
       <span
         className={cn(
-          "flex-1 break-all text-xs",
-          mono && "font-mono",
-          !full && "truncate"
+        "min-w-0 flex-1 text-xs",
+        mono && "font-mono",
+        full ? "break-all" : "truncate"
         )}
         title={value}
       >
-        {value}
+        {displayedValue}
       </span>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         onClick={copy}
-        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        aria-label="Copy"
+        className="shrink-0 text-muted-foreground"
+        aria-label={copied ? "Copied full value" : "Copy full value"}
+        title={copied ? "Copied" : "Copy full value"}
       >
         {copied ? (
           <Check className="size-3.5 text-emerald-600" />
         ) : (
           <Copy className="size-3.5" />
         )}
-      </button>
+      </Button>
       {href && (
         <a
           href={href}

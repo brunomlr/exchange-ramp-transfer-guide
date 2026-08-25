@@ -49,11 +49,11 @@ export function AccordionStep({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border transition-colors",
+        "overflow-hidden rounded-xl border bg-card transition-colors",
         state === "active" && "border-primary/60 shadow-sm ring-1 ring-primary/20",
         state === "done" && done.border,
         state === "upcoming" && "border-border",
-        locked && "opacity-60"
+        locked && "opacity-70"
       )}
     >
       <button
