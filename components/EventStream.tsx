@@ -79,7 +79,7 @@ export function EventStream({
           </span>
           <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none" />
               <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
             </span>
             polling RPC
@@ -88,7 +88,7 @@ export function EventStream({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+        <div className="rounded-lg bg-muted/50 p-3 text-sm leading-relaxed text-muted-foreground">
           Polling <DocLink doc="getEvents" code>getEvents</DocLink> for{" "}
           <code className="font-mono">transfer</code> events — same stream for
           both models. Every transfer (classic payment,{" "}

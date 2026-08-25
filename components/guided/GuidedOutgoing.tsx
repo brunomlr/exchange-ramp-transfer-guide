@@ -29,6 +29,7 @@ import { AddressChip } from "@/components/AddressChip";
 import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
+import { FlowProgress } from "@/components/guided/FlowProgress";
 import { Highlight, themes } from "prism-react-renderer";
 import { cn } from "@/lib/utils";
 import {
@@ -202,6 +203,10 @@ export function GuidedOutgoing() {
   const step1Done = !!committed1;
   const step2Done = !!committed2;
   const step3Done = sendStatus === "success" && !!sentInfo;
+  const completedSteps =
+    Number(step1Done) + Number(step2Done) + Number(step3Done);
+  const currentProgressStep =
+    openStep || (!step1Done ? 1 : !step2Done ? 2 : 3);
 
   const step1Changed =
     !!committed1 &&
@@ -324,9 +329,14 @@ export function GuidedOutgoing() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flow-outgoing space-y-3">
       {/* Summary — which way the funds move in this flow */}
       <FundsFlowSummary direction="outgoing" />
+      <FlowProgress
+        direction="outgoing"
+        currentStep={currentProgressStep}
+        completedSteps={completedSteps}
+      />
 
       {/* Source: always the exchange's hot G account */}
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
@@ -337,7 +347,7 @@ export function GuidedOutgoing() {
           value={EXCHANGE_G || "— NEXT_PUBLIC_EXCHANGE_G not set —"}
           href={EXCHANGE_G ? explorerAccountUrl(EXCHANGE_G) : undefined}
         />
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Every outgoing transfer is signed by and sent from the ramp/exchange&apos;s
           Classic (G) account. Only the destination and token change.
         </p>
@@ -667,7 +677,7 @@ function BuildExplainer({
         </Badge>
       </div>
 
-      <div className="rounded-lg border bg-muted/30 p-3">
+      <div className="rounded-lg bg-muted/50 p-3">
         <p className="type-eyebrow mb-1.5 text-muted-foreground">
           How it&apos;s built
         </p>
@@ -1277,7 +1287,7 @@ function RadioCard({
       disabled={disabled}
       aria-pressed={active}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
+        "flex min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
         active
           ? "border-primary bg-primary/5 ring-1 ring-primary/30"
           : "hover:bg-muted/50",
@@ -1285,12 +1295,13 @@ function RadioCard({
       )}
     >
       {icon && <span className="text-primary">{icon}</span>}
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{title}</span>
         <span className="block truncate text-xs text-muted-foreground">
           {subtitle}
         </span>
       </span>
+      {active && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
     </button>
   );
 }

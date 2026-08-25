@@ -1,6 +1,12 @@
 "use client";
 
-import { Landmark, ArrowLeftRight, Hash, Target } from "lucide-react";
+import {
+  Landmark,
+  ArrowLeftRight,
+  Hash,
+  Target,
+  CheckCircle2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -83,13 +89,17 @@ export function ModelSelect({
                 key={o.value}
                 type="button"
                 onClick={() => setModel(o.value)}
+                aria-pressed={selected}
                 className={cn(
-                  "flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors",
+                  "relative flex flex-col gap-1.5 rounded-lg border p-3 pr-9 text-left transition-colors",
                   selected
                     ? "border-primary bg-primary/5 ring-1 ring-primary/30"
                     : "hover:bg-muted/50"
                 )}
               >
+                {selected && (
+                  <CheckCircle2 className="absolute top-3 right-3 size-4 text-primary" />
+                )}
                 <div className="flex items-center gap-2">
                   <Icon className="size-4 text-primary" />
                   <span className="text-sm font-medium">{o.title}</span>
@@ -106,12 +116,12 @@ export function ModelSelect({
                   Incoming transfer = {o.meaning}
                 </span>
                 {o.detail && (
-                  <span className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="text-sm leading-relaxed text-muted-foreground">
                     {o.detail}
                   </span>
                 )}
                 {o.bullets && (
-                  <ul className="ml-3 list-disc space-y-1 text-xs leading-relaxed text-muted-foreground">
+                  <ul className="ml-3 list-disc space-y-1 text-sm leading-relaxed text-muted-foreground">
                     {o.bullets.map((b, i) => (
                       <li key={i}>{b}</li>
                     ))}

@@ -78,7 +78,7 @@ export function GuidedDetection({
         </span>
         <span className="flex items-center gap-1.5">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none" />
             <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
           </span>
           {latestLedger ? `ledger ${latestLedger}` : "connecting…"}
@@ -89,7 +89,7 @@ export function GuidedDetection({
 
       {!shown ? (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
-          <ArrowDownToLine className="size-5 animate-bounce" />
+          <ArrowDownToLine className="size-5 motion-safe:animate-bounce" />
           Watching the unified event stream for the user&apos;s transfer…
           <span className="text-xs">
             The detection summary appears automatically once the event lands.
@@ -180,7 +180,7 @@ function DetectionSummary({
       </div>
 
       {/* How detection happened — always visible, no expanding */}
-      <div className="rounded-lg border bg-muted/30 p-3">
+      <div className="rounded-lg bg-muted/50 p-3">
         <p className="type-eyebrow mb-1.5 text-muted-foreground">
           How it was detected
         </p>

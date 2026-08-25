@@ -43,6 +43,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-flow: var(--flow);
+  --color-flow-foreground: var(--flow-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -61,6 +63,8 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
+  --flow: var(--primary);
+  --flow-foreground: var(--primary-foreground);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -96,6 +100,8 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
+  --flow: var(--primary);
+  --flow-foreground: var(--primary-foreground);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -121,28 +127,27 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* Per-flow accents: retint the neutral `--primary` so every existing
-   *-primary utility inside the flow picks up the flow's color.
-   Incoming = green (matches the completion/done color), outgoing = blue. */
+/* Flow direction is distinct from actions (`--primary`) and outcomes.
+   Incoming uses teal; outgoing uses blue; success remains emerald. */
+.flow-incoming,
 .accent-incoming {
-  --primary: oklch(0.596 0.145 163.225); /* emerald-600 */
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.596 0.145 163.225);
+  --flow: oklch(0.548 0.128 176.7);
+  --flow-foreground: oklch(0.985 0 0);
 }
+.flow-outgoing,
 .accent-outgoing {
-  --primary: oklch(0.546 0.245 262.881); /* blue-600 */
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.546 0.245 262.881);
+  --flow: oklch(0.546 0.245 262.881);
+  --flow-foreground: oklch(0.985 0 0);
 }
+.dark .flow-incoming,
 .dark .accent-incoming {
-  --primary: oklch(0.696 0.17 162.48); /* emerald-500 */
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.696 0.17 162.48);
+  --flow: oklch(0.69 0.13 174);
+  --flow-foreground: oklch(0.145 0 0);
 }
+.dark .flow-outgoing,
 .dark .accent-outgoing {
-  --primary: oklch(0.623 0.214 259.815); /* blue-500 */
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.623 0.214 259.815);
+  --flow: oklch(0.623 0.214 259.815);
+  --flow-foreground: oklch(0.985 0 0);
 }
 
 @layer base {
@@ -161,10 +166,10 @@
   /* Semantic typography roles. Size/weight/tracking live here so every
      equivalent element matches; set color at the call site. */
   .type-page-title {
-    @apply text-2xl font-semibold tracking-tight;
+    @apply text-3xl font-semibold tracking-tight;
   }
   .type-title {
-    @apply text-sm font-semibold tracking-tight;
+    @apply text-base font-semibold tracking-tight;
   }
   .type-eyebrow {
     @apply text-xs font-semibold tracking-wide uppercase;
