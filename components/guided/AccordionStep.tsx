@@ -1,6 +1,11 @@
 "use client";
 
 import { Check, ChevronDown, Lock } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 export type StepState = "done" | "active" | "upcoming";
@@ -47,7 +52,12 @@ export function AccordionStep({
 }) {
   const done = DONE_ACCENT[accent];
   return (
-    <div
+    <Collapsible
+      open={open}
+      disabled={locked}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen !== open) onToggle();
+      }}
       className={cn(
         "overflow-hidden rounded-xl border bg-card transition-colors",
         state === "active" && "border-primary/60 shadow-sm ring-1 ring-primary/20",
@@ -56,11 +66,7 @@ export function AccordionStep({
         locked && "opacity-70"
       )}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={locked}
-        aria-expanded={open}
+      <CollapsibleTrigger
         className={cn(
           "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors",
           locked ? "cursor-not-allowed" : "hover:bg-muted/40",
@@ -116,18 +122,13 @@ export function AccordionStep({
             )}
           />
         )}
-      </button>
+      </CollapsibleTrigger>
 
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows] duration-150 ease-out",
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        )}
+      <CollapsibleContent
+        className="h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-150 ease-out data-closed:h-0 motion-reduce:transition-none"
       >
-        <div className="overflow-hidden" aria-hidden={!open} inert={!open}>
-          <div className="border-t px-4 py-4">{children}</div>
-        </div>
-      </div>
-    </div>
+        <div className="border-t px-4 py-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

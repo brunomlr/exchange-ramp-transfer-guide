@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 const STEP_LABELS = {
@@ -39,19 +40,11 @@ export function FlowProgress({
           </span>
         </div>
 
-        <div
-          className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
-          role="progressbar"
+        <Progress
+          value={progress}
           aria-label={`${direction} flow progress`}
-          aria-valuemin={0}
-          aria-valuemax={labels.length}
-          aria-valuenow={completedSteps}
-        >
-          <div
-            className="h-full rounded-full bg-flow transition-[width] duration-300 motion-reduce:transition-none"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+          className="mt-3 gap-0 [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:bg-flow [&_[data-slot=progress-indicator]]:duration-300 motion-reduce:[&_[data-slot=progress-indicator]]:transition-none"
+        />
 
         <ol
           className={cn(

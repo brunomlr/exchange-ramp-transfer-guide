@@ -23,6 +23,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup } from "@/components/ui/radio-group";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { AddressChip } from "@/components/AddressChip";
@@ -30,6 +36,7 @@ import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
 import { FlowProgress } from "@/components/guided/FlowProgress";
+import { RadioCard } from "@/components/guided/RadioCard";
 import { Highlight, themes } from "prism-react-renderer";
 import { cn } from "@/lib/utils";
 import {
@@ -389,42 +396,49 @@ export function GuidedOutgoing() {
         <Label className="mb-1.5 block text-foreground">
           Destination account
         </Label>
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        <RadioGroup
+          value={destType ?? ""}
+          onValueChange={(value) => pickDest(value as AccountType)}
+          aria-label="Destination account"
+          className="mb-4 grid-cols-2"
+        >
           <RadioCard
-            active={destType === "G"}
+            value="G"
             disabled={!USER_G}
-            onClick={() => pickDest("G")}
             title="Classic Account (G address)"
             subtitle="takes native payment"
             icon={<Wallet className="size-4" />}
           />
           <RadioCard
-            active={destType === "C"}
+            value="C"
             disabled={!USER_CONTRACT_C}
-            onClick={() => pickDest("C")}
             title="Contract Account (C address)"
             subtitle="token transfer only"
             icon={<Boxes className="size-4" />}
           />
-        </div>
+        </RadioGroup>
 
         {destType && (
           <>
             <Label className="mb-1.5 block text-foreground">
               Token
             </Label>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <RadioGroup
+              value={tokenKey}
+              onValueChange={pickToken}
+              aria-label="Token"
+              className="sm:grid-cols-3"
+            >
               {tokens.map((t) => (
                 <RadioCard
                   key={t.key}
-                  active={tokenKey === t.key}
+                  value={t.key}
                   disabled={!t.enabled}
-                  onClick={() => pickToken(t.key)}
                   title={t.label}
                   subtitle={t.enabled ? t.symbol : "set env"}
                 />
               ))}
-            </div>
+            </RadioGroup>
             {selectedToken && (
               <p className="mt-2 text-xs text-muted-foreground">
                 {selectedToken.note}
@@ -864,30 +878,32 @@ function IdMethodPicker({
         argument inside the <code className="font-mono">transfer</code> call.
       </p>
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <RadioGroup
+        value={idMethod}
+        onValueChange={(value) => onMethod(value as WithdrawalIdMethod)}
+        aria-label="Destination routing id"
+        className="sm:grid-cols-3"
+      >
         <RadioCard
-          active={idMethod === "none"}
-          onClick={() => onMethod("none")}
+          value="none"
           title="No id"
           subtitle="plain address"
         />
         <RadioCard
-          active={idMethod === "muxed"}
+          value="muxed"
           disabled={!avail.muxed}
-          onClick={() => onMethod("muxed")}
           title="Muxed id"
           subtitle={avail.muxed ? "M… address" : "G only"}
           icon={<Hash className="size-4" />}
         />
         <RadioCard
-          active={idMethod === "memo"}
+          value="memo"
           disabled={!avail.memo}
-          onClick={() => onMethod("memo")}
           title="Memo id"
           subtitle={avail.memo ? "Memo.id" : "classic only"}
           icon={<Tag className="size-4" />}
         />
-      </div>
+      </RadioGroup>
 
       {/* Why an option is unavailable for this destination + token. */}
       {destType === "C" && (
@@ -1099,11 +1115,12 @@ function TxCodeSnippet({
       : `contract transfer · ${tokenSymbol}`;
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="mb-4 overflow-hidden rounded-lg border"
+    >
+      <CollapsibleTrigger
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted/40"
       >
         <Code2 className="size-3.5 text-primary" />
@@ -1115,8 +1132,8 @@ function TxCodeSnippet({
             open && "rotate-180"
           )}
         />
-      </button>
-      {open && (
+      </CollapsibleTrigger>
+      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-150 ease-out data-closed:h-0 motion-reduce:transition-none">
         <Highlight theme={themes.nightOwl} code={code} language="tsx">
           {({ className, style, tokens, getLineProps, getTokenProps }) => (
             <pre
@@ -1136,8 +1153,8 @@ function TxCodeSnippet({
             </pre>
           )}
         </Highlight>
-      )}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -1259,47 +1276,6 @@ function StepAction({
         </>
       )}
     </Button>
-  );
-}
-
-function RadioCard({
-  active,
-  disabled,
-  onClick,
-  title,
-  subtitle,
-  icon,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  title: string;
-  subtitle: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={active}
-      className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
-        active
-          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-          : "hover:bg-muted/50",
-        disabled && "cursor-not-allowed opacity-50"
-      )}
-    >
-      {icon && <span className="text-primary">{icon}</span>}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{title}</span>
-        <span className="block truncate text-xs text-muted-foreground">
-          {subtitle}
-        </span>
-      </span>
-      {active && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
-    </button>
   );
 }
 

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface AddressChipProps {
@@ -44,30 +49,45 @@ export function AddressChip({
         className
       )}
     >
-      <span
-        className={cn(
-        "min-w-0 flex-1 text-xs",
-        mono && "font-mono",
-        full ? "break-all" : "truncate"
-        )}
-        title={value}
-      >
-        {displayedValue}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={copy}
-        className="shrink-0 text-muted-foreground"
-        aria-label={copied ? "Copied full value" : "Copy full value"}
-        title={copied ? "Copied" : "Copy full value"}
-      >
-        {copied ? (
-          <Check className="size-3.5 text-emerald-600" />
-        ) : (
-          <Copy className="size-3.5" />
-        )}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span
+              tabIndex={0}
+              className={cn(
+                "min-w-0 flex-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                mono && "font-mono",
+                full ? "break-all" : "truncate"
+              )}
+            />
+          }
+        >
+          {displayedValue}
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm break-all font-mono">
+          {value}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={copy}
+              className="shrink-0 text-muted-foreground"
+              aria-label={copied ? "Copied full value" : "Copy full value"}
+            />
+          }
+        >
+          {copied ? (
+            <Check className="size-3.5 text-emerald-600" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{copied ? "Copied" : "Copy full value"}</TooltipContent>
+      </Tooltip>
       {href && (
         <a
           href={href}

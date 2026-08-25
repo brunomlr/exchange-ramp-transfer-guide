@@ -19,17 +19,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AddressChip } from "@/components/AddressChip";
 import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
 import { FlowProgress } from "@/components/guided/FlowProgress";
+import { RadioCard } from "@/components/guided/RadioCard";
 import {
   GuidedDetection,
   type DetectionCase,
 } from "@/components/guided/GuidedDetection";
-import { cn } from "@/lib/utils";
 import {
   EXCHANGE_G,
   DEPOSIT_ID,
@@ -473,40 +474,47 @@ export function GuidedIncoming() {
         <Label className="mb-1.5 block text-foreground">
           Source account
         </Label>
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        <RadioGroup
+          value={accountType ?? ""}
+          onValueChange={(value) => pickAccount(value as AccountType)}
+          aria-label="Source account"
+          className="mb-4 grid-cols-2"
+        >
           <RadioCard
-            active={accountType === "G"}
+            value="G"
             disabled={!USER_G}
-            onClick={() => pickAccount("G")}
             title="Classic Account (G address)"
             icon={<Wallet className="size-4" />}
           />
           <RadioCard
-            active={accountType === "C"}
+            value="C"
             disabled={!USER_CONTRACT_C}
-            onClick={() => pickAccount("C")}
             title="Contract Account (C address)"
             icon={<Wallet className="size-4" />}
           />
-        </div>
+        </RadioGroup>
 
         {accountType && (
           <>
             <Label className="mb-1.5 block text-foreground">
               Token
             </Label>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <RadioGroup
+              value={tokenKey}
+              onValueChange={setTokenKey}
+              aria-label="Token"
+              className="sm:grid-cols-3"
+            >
               {tokens.map((t) => (
                 <RadioCard
                   key={t.key}
-                  active={tokenKey === t.key}
+                  value={t.key}
                   disabled={!t.enabled}
-                  onClick={() => setTokenKey(t.key)}
                   title={t.label}
                   subtitle={t.enabled ? t.symbol : "set env"}
                 />
               ))}
-            </div>
+            </RadioGroup>
             {selectedToken && (
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {selectedToken.note}{" "}
@@ -555,31 +563,23 @@ export function GuidedIncoming() {
           transfer. This
           decides the destination and what gets matched on-chain.
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <RadioGroup
+          value={model ?? ""}
+          onValueChange={(value) => pickModel(value as TrackingModel)}
+          aria-label="Identification model"
+          className="sm:grid-cols-2"
+        >
           {MODEL_OPTIONS.map((o) => {
             const Icon = o.icon;
-            const selected = model === o.value;
             return (
-              <button
+              <RadioCard
                 key={o.value}
-                type="button"
-                onClick={() => pickModel(o.value)}
-                aria-pressed={selected}
-                className={cn(
-                  "relative flex flex-col gap-1.5 rounded-lg border p-3 pr-9 text-left transition-colors",
-                  selected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                    : "hover:bg-muted/50"
-                )}
+                value={o.value}
+                title={o.title}
+                icon={<Icon className="size-4" />}
+                className="p-3"
               >
-                {selected && (
-                  <CheckCircle2 className="absolute top-3 right-3 size-4 text-primary" />
-                )}
-                <div className="flex items-center gap-2">
-                  <Icon className="size-4 text-primary" />
-                  <span className="text-sm font-medium">{o.title}</span>
-                </div>
-                <span className="flex items-center gap-1 text-xs font-medium text-foreground/80">
+                <span className="mt-1.5 flex items-center gap-1 text-xs font-medium text-foreground/80">
                   {o.value === "exchange" ? (
                     <Hash className="size-3" />
                   ) : (
@@ -602,10 +602,10 @@ export function GuidedIncoming() {
                     ))}
                   </ul>
                 )}
-              </button>
+              </RadioCard>
             );
           })}
-        </div>
+        </RadioGroup>
 
         {effModel === "ramp" && (
           <div className="mt-3">
@@ -650,20 +650,23 @@ export function GuidedIncoming() {
             <Label className="mb-1.5 block text-foreground">
               How the user addresses the transfer
             </Label>
-            <div className="grid grid-cols-2 gap-2">
+            <RadioGroup
+              value={addressing}
+              onValueChange={(value) => setAddressing(value as Addressing)}
+              aria-label="Transfer addressing"
+              className="grid-cols-2"
+            >
               <RadioCard
-                active={addressing === "muxed"}
-                onClick={() => setAddressing("muxed")}
+                value="muxed"
                 title="Muxed Address"
                 subtitle="id in address"
               />
               <RadioCard
-                active={addressing === "memo"}
-                onClick={() => setAddressing("memo")}
+                value="memo"
                 title="G Account + Memo"
                 subtitle="id in memo"
               />
-            </div>
+            </RadioGroup>
           </div>
         )}
 
@@ -1083,49 +1086,6 @@ function StepAction({
         </>
       )}
     </Button>
-  );
-}
-
-function RadioCard({
-  active,
-  disabled,
-  onClick,
-  title,
-  subtitle,
-  icon,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  title: string;
-  subtitle?: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={active}
-      className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
-        active
-          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-          : "hover:bg-muted/50",
-        disabled && "cursor-not-allowed opacity-50"
-      )}
-    >
-      {icon && <span className="text-primary">{icon}</span>}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{title}</span>
-        {subtitle && (
-          <span className="block truncate text-xs text-muted-foreground">
-            {subtitle}
-          </span>
-        )}
-      </span>
-      {active && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
-    </button>
   );
 }
 
