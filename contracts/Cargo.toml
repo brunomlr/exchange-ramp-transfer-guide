@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = ["ed25519-verifier", "fungible-token", "smart-account"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+# soroban-sdk 26.1 is the line the published OpenZeppelin 0.7.2 crates require
+# (`soroban-sdk = "^26.1.0"`). Testnet runs protocol 27 and happily executes
+# wasm built against older SDKs.
+soroban-sdk = "26.1.1"
+stellar-access = "=0.7.2"
+stellar-accounts = "=0.7.2"
+stellar-contract-utils = "=0.7.2"
+stellar-macros = "=0.7.2"
+stellar-tokens = "=0.7.2"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true

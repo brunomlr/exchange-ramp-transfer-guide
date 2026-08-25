@@ -43,26 +43,74 @@ Config lives in `.env.local` (see `.env.example`). All addresses/keys are
 | `NEXT_PUBLIC_EXCHANGE_G` | Exchange base G account (deposit destination) |
 | `NEXT_PUBLIC_DEPOSIT_ID` | Fixed demo deposit id (memo id / muxed id) |
 | `NEXT_PUBLIC_USER_G` | User's classic wallet (sender) |
-| `NEXT_PUBLIC_USER_CONTRACT_C` | User's contract account (sender) |
+| `NEXT_PUBLIC_USER_CONTRACT_C` | User's contract account (sender) — the OpenZeppelin smart account |
+| `NEXT_PUBLIC_ED25519_VERIFIER` | Verifier the smart account's signer is registered against |
 | `NEXT_PUBLIC_XLM_SAC` | Native XLM Stellar Asset Contract |
 | `NEXT_PUBLIC_USDC_SAC` / `NEXT_PUBLIC_SEP41_TOKEN` / `NEXT_PUBLIC_SC_TOKEN` | Optional tokens — each enables its option when set |
-| `USER_G_SECRET` / `CONTRACT_ADMIN_SECRET` | **Server-side only** signing secrets |
+| `USER_G_SECRET` / `CONTRACT_SIGNER_SECRET` | **Server-side only** signing secrets |
 
-### Contract account setup
+## Contracts
 
-The C-account source is a redeployed `passkey-account` smart wallet driven via
-`execute_as_admin` (a plain ed25519 admin keypair — no passkey needed for the
-demo). To redeploy on a fresh testnet:
+Everything this demo deploys lives in `contracts/` — a Cargo workspace of three
+[OpenZeppelin Stellar](https://github.com/OpenZeppelin/stellar-contracts)
+contracts, pinned to the published `0.7.2` crates (which build against
+`soroban-sdk` 26.1):
+
+| Crate | What it is |
+|-------|------------|
+| `fungible-token` | The "Custom SEP-41 token" option. OZ `stellar-tokens` `Base` + `stellar-access` ownable. Its `transfer` takes a `MuxedAddress` and emits the CAP-67 event the simulator matches on. |
+| `smart-account` | The user's Contract (C) wallet — `NEXT_PUBLIC_USER_CONTRACT_C`. OZ `stellar-accounts` smart account: one `Default` context rule, one `External` ed25519 signer, no policies (1-of-1). |
+| `ed25519-verifier` | Stateless signature oracle the smart account's signer is checked against. Reusable across accounts. |
+
+### Build
+
+`stellar contract build` needs **stellar-cli 25.2.0+** — the OZ crates enable
+soroban-sdk's `experimental_spec_shaking_v2` feature, and a plain `cargo build`
+is rejected with a message saying so.
 
 ```bash
-stellar contract deploy \
-  --wasm <path>/passkey_account.optimized.wasm \
-  --source-account <ADMIN_SECRET> --network testnet
-# then initialize + fund the contract:
-CONTRACT_ID=<deployed C...> ADMIN_SECRET=<S...> node scripts/setup-contract.mjs
+cd contracts && stellar contract build
 ```
 
-Set the resulting contract id as `NEXT_PUBLIC_USER_CONTRACT_C`.
+### Deploy / recover from a testnet reset
+
+A testnet reset wipes accounts, contracts, trustlines and balances — but not
+your keypairs. One script rebuilds the whole demo from the three secrets in
+`.env.local`:
+
+```bash
+node scripts/bootstrap-testnet.mjs
+```
+
+It friendbot-funds the classic accounts, builds the contracts, re-wraps the XLM
+and USDC SACs, deploys verifier → smart account → token, funds the smart account
+with XLM, mints DEMO to both source wallets, adds the USDC trustlines, and
+rewrites the derived values in `.env.local` (keeping a `.env.local.bak`). Then
+`rm -rf .next && npm run dev`.
+
+| Flag | Effect |
+|------|--------|
+| `--skip-build` | Reuse the wasm already in `contracts/target` |
+| `--dry-run` | Deploy and fund, but print the env values instead of writing them |
+
+The one thing it can't do is give you testnet **USDC** — those balances come
+from [Circle's faucet](https://faucet.circle.com). Until you top the accounts
+up, the USDC option will fail even though the trustlines exist.
+
+### How the C account authorizes a deposit
+
+There is no admin bypass. The account's `execute(target, fn, args)` entry point
+calls `require_auth()` on itself, so `/api/send` has to hand the host a signed
+`AuthPayload` (`lib/smartAccount.ts`):
+
+1. Simulate the `execute` call. The host records the account's auth entry and
+   picks a nonce, but does **not** run `__check_auth`.
+2. Sign `sha256(signature_payload || xdr(context_rule_ids))` — not the raw host
+   payload. Binding the rule ids into the digest is what stops a signature from
+   being replayed against a weaker context rule.
+3. Attach the signed entry and simulate **again**. This pass really executes
+   `__check_auth` and the verifier, so the resulting footprint and resource fee
+   cover the whole call.
 
 ## Troubleshooting
 
