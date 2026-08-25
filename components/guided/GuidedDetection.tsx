@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { DocLink } from "@/components/DocLink";
 import { fromStroops, shorten, explorerTxUrl } from "@/lib/stellar";
 import { useTransferEvents } from "@/lib/useTransferEvents";
-import type { DetectedTransfer } from "@/lib/events";
+import { assetTicker, formatTopics, type DetectedTransfer } from "@/lib/events";
 import type { AccountType } from "@/lib/tokens";
 import type { Addressing, SentInfo, TrackingModel } from "@/lib/flow";
 
@@ -201,13 +201,10 @@ function DetectionSummary({
             CAP-67 transfer event
           </Badge>
           <span className="font-mono font-medium">
-            {sentAmount} {assetSymbol(t.asset)}
+            {sentAmount} {assetTicker(t.asset, c.tokenSymbol)}
           </span>
         </div>
-        <KV k="topics">
-          [&quot;transfer&quot;, {shorten(t.from)}, {shorten(t.to)}, &quot;
-          {t.asset}&quot;]
-        </KV>
+        <KV k="topics">{formatTopics(t.topicsRaw)}</KV>
         <KV k="data">
           <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-2xs leading-relaxed">
             {t.dataRaw}
@@ -241,9 +238,14 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
     lines.push(
       <>
         The user sent {c.tokenSymbol} from a{" "}
-        <strong>Contract Account (C address)</strong>, which invoked the
-        token&apos;s <code className="font-mono">transfer</code>{" "}
-        through a contract call.
+        <strong>Contract Account (C address)</strong> — an OpenZeppelin smart
+        account. Its <code className="font-mono">execute</code> entry point
+        invoked the token&apos;s <code className="font-mono">transfer</code>,
+        authorized by a signature the account&apos;s{" "}
+        <DocLink doc="requireAuth">
+          <code className="font-mono">__check_auth</code>
+        </DocLink>{" "}
+        verified against its registered signer.
       </>
     );
   } else if (c.mechanism === "classic-native") {
@@ -268,9 +270,12 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
     <>
       Either way the movement emitted one{" "}
       <DocLink doc="cap67"><strong>CAP-67 unified transfer event</strong></DocLink>{" "}
-      on the {c.tokenSymbol} asset contract — topics{" "}
-      <code className="font-mono">[&quot;transfer&quot;, from, to, asset]</code>,
-      with the amount (and any id) in the data.
+      on the {c.tokenSymbol} asset contract, with the amount (and any id) in the
+      data. A <DocLink doc="sac">SAC</DocLink> adds the asset string as a fourth
+      topic; a custom <DocLink doc="sep41">SEP-41</DocLink> token emits just{" "}
+      <code className="font-mono">[&quot;transfer&quot;, from, to]</code> — the
+      arity differs, the <code className="font-mono">to_muxed_id</code> check
+      doesn&apos;t.
     </>
   );
 
@@ -335,13 +340,13 @@ function outcomeLine(
       <>
         <code className="font-mono">from</code> and{" "}
         <code className="font-mono">amount</code>{" "}match the intent — the ramp
-        ties the transfer to the user&apos;s deposit and the token purchase completes.
+        ties the transfer to the user&apos;s off-ramp intent and completes it.
       </>
     ) : (
       <>
         The amount sent ({sentAmount} {c.tokenSymbol}) doesn&apos;t match the
         intent ({intentAmount} {c.tokenSymbol}). The ramp received the funds at
-        its address but can&apos;t match the intent, so the token purchase{" "}
+        its address but can&apos;t match the intent, so the off-ramp{" "}
         <strong>won&apos;t complete</strong>.
       </>
     );
@@ -472,11 +477,6 @@ function ValueChip({
       </div>
     </div>
   );
-}
-
-function assetSymbol(sep11: string): string {
-  if (sep11 === "native") return "XLM";
-  return sep11.split(":")[0] || sep11;
 }
 
 function KV({ k, children }: { k: string; children: React.ReactNode }) {

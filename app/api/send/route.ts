@@ -6,11 +6,13 @@ import {
   EXCHANGE_G,
   USER_G,
   USER_CONTRACT_C,
+  ED25519_VERIFIER,
   DEPOSIT_ID,
   muxedAddress,
   toStroops,
 } from "@/lib/stellar";
 import { findToken, type AccountType } from "@/lib/tokens";
+import { buildSmartAccountTx } from "@/lib/smartAccount";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,15 +35,21 @@ interface SendRequest {
   depositId?: string;
 }
 
-/** Submit a tx via RPC (prepare first if it contains a Soroban op), then poll. */
+/**
+ * Submit a tx via RPC (prepare first if it contains a Soroban op), then poll.
+ *
+ * Pass `alreadyPrepared` for a transaction that has been simulated and
+ * assembled by the caller — re-preparing it would only cost another round trip.
+ */
 async function submitAndPoll(
   server: StellarSdk.rpc.Server,
   tx: StellarSdk.Transaction,
-  signers: StellarSdk.Keypair[]
+  signers: StellarSdk.Keypair[],
+  { alreadyPrepared = false }: { alreadyPrepared?: boolean } = {}
 ) {
-  const needsPrepare = tx.operations.some(
-    (op) => op.type === "invokeHostFunction"
-  );
+  const needsPrepare =
+    !alreadyPrepared &&
+    tx.operations.some((op) => op.type === "invokeHostFunction");
   let finalTx: StellarSdk.Transaction = tx;
   if (needsPrepare) {
     finalTx = await server.prepareTransaction(tx);
@@ -122,7 +130,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userSecret = process.env.USER_G_SECRET;
-    const adminSecret = process.env.CONTRACT_ADMIN_SECRET;
+    const signerSecret = process.env.CONTRACT_SIGNER_SECRET;
     const server = new StellarSdk.rpc.Server(RPC_URL);
     const stroops = toStroops(amount || "1");
     const amountScVal = StellarSdk.nativeToScVal(stroops, { type: "i128" });
@@ -188,10 +196,14 @@ export async function POST(req: NextRequest) {
         built = await submitAndPoll(server, tx, [kp]);
       }
     } else {
-      // Contract account: drive token.transfer via execute_as_admin.
-      if (!adminSecret) {
+      // Contract account: the OpenZeppelin smart account calls the token's
+      // `transfer` through its `execute` entry point. `execute` requires the
+      // account's own authorization, so the transaction has to carry a signed
+      // `AuthPayload` — see lib/smartAccount.ts. The signing keypair is the
+      // account's one registered signer, not an admin with a bypass.
+      if (!signerSecret) {
         return NextResponse.json(
-          { error: "CONTRACT_ADMIN_SECRET is not configured." },
+          { error: "CONTRACT_SIGNER_SECRET is not configured." },
           { status: 500 }
         );
       }
@@ -201,29 +213,35 @@ export async function POST(req: NextRequest) {
           { status: 500 }
         );
       }
-      const admin = StellarSdk.Keypair.fromSecret(adminSecret);
-      const source = await server.getAccount(admin.publicKey());
-      const wallet = new StellarSdk.Contract(USER_CONTRACT_C);
-      const innerArgs = StellarSdk.xdr.ScVal.scvVec([
-        StellarSdk.Address.fromString(USER_CONTRACT_C).toScVal(),
-        StellarSdk.Address.fromString(contractDest).toScVal(),
-        amountScVal,
-      ]);
-      const tx = new StellarSdk.TransactionBuilder(source, {
-        fee: "3000000",
+      if (!ED25519_VERIFIER) {
+        return NextResponse.json(
+          { error: "NEXT_PUBLIC_ED25519_VERIFIER is not configured." },
+          { status: 500 }
+        );
+      }
+      const accountSigner = StellarSdk.Keypair.fromSecret(signerSecret);
+      // The fee payer is a plain classic account; it does not authorize the
+      // transfer, it only pays for the transaction.
+      const feePayer = StellarSdk.Keypair.fromSecret(userSecret ?? signerSecret);
+      const source = await server.getAccount(feePayer.publicKey());
+
+      const tx = await buildSmartAccountTx(server, {
+        smartAccountId: USER_CONTRACT_C,
+        verifierId: ED25519_VERIFIER,
+        signer: accountSigner,
+        target: token.contractId,
+        targetFn: "transfer",
+        targetArgs: [
+          StellarSdk.Address.fromString(USER_CONTRACT_C).toScVal(),
+          StellarSdk.Address.fromString(contractDest).toScVal(),
+          amountScVal,
+        ],
+        source,
         networkPassphrase,
-      })
-        .addOperation(
-          wallet.call(
-            "execute_as_admin",
-            StellarSdk.Address.fromString(token.contractId).toScVal(),
-            StellarSdk.nativeToScVal("transfer", { type: "symbol" }),
-            innerArgs
-          )
-        )
-        .setTimeout(120)
-        .build();
-      built = await submitAndPoll(server, tx, [admin]);
+      });
+      built = await submitAndPoll(server, tx, [feePayer], {
+        alreadyPrepared: true,
+      });
     }
 
     return NextResponse.json({

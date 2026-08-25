@@ -1,5 +1,5 @@
 import * as StellarSdk from "@stellar/stellar-sdk";
-import { fromStroops } from "@/lib/stellar";
+import { fromStroops, shorten } from "@/lib/stellar";
 
 /**
  * RPC-only deposit detection.
@@ -20,9 +20,9 @@ import { fromStroops } from "@/lib/stellar";
  * `to_muxed_id` check therefore works uniformly across all three token kinds —
  * the only difference is topic arity, which `fetchTransferEvents` filters for.
  *
- * The same event stream feeds two identification models (see `matchTransfer`):
- *   - exchange: match `to_muxed_id` against a per-user deposit id.
- *   - ramp:     match the off-ramp intent — `from` wallet + exact `amount`.
+ * The same event stream feeds both identification models — the exchange matches
+ * `to_muxed_id` against a per-user deposit id, the ramp matches the off-ramp
+ * intent on `from` wallet + exact `amount`. See `GuidedDetection`.
  */
 
 export interface DetectedTransfer {
@@ -46,27 +46,31 @@ export interface DetectedTransfer {
   dataRaw: string;
 }
 
-/** The active identification strategy, chosen at step 2. */
-export type Matcher =
-  | { model: "exchange"; depositId: string }
-  | {
-      model: "ramp";
-      userWallet: string;
-      amountStroops: string;
-      /** Only count events at/after the ledger the intent was armed. */
-      sinceLedger: number;
-    };
+/**
+ * The ticker to show next to an amount.
+ *
+ * A SAC puts a SEP-0011 asset string in its 4th topic ("native", "USDC:GA…"),
+ * so the ticker is right there. A custom SEP-41 token emits no such topic, and
+ * `decodeTransferEvent` falls back to the contract id — which is not a ticker.
+ * Pass the token's configured symbol for that case.
+ */
+export function assetTicker(asset: string, fallbackSymbol?: string): string {
+  if (asset === "native") return "XLM";
+  if (asset.includes(":")) return asset.split(":")[0];
+  return fallbackSymbol || shorten(asset, 4, 4);
+}
 
-/** Does this transfer satisfy the active matcher? */
-export function matchTransfer(t: DetectedTransfer, m: Matcher): boolean {
-  if (m.model === "exchange") {
-    return t.toMuxedId != null && t.toMuxedId === m.depositId;
-  }
-  return (
-    t.from === m.userWallet &&
-    t.amount === m.amountStroops &&
-    t.ledger >= m.sinceLedger
-  );
+/**
+ * The event's *actual* topics, formatted for display. Arity is not fixed —
+ * a SAC emits four topics and a custom SEP-41 token three — so this renders
+ * whatever the event carried rather than assuming a shape.
+ */
+export function formatTopics(topicsRaw: string[]): string {
+  const parts = topicsRaw.map((v, i) => {
+    if (i === 1 || i === 2) return shorten(v); // from / to addresses
+    return `"${v}"`; // the "transfer" symbol, and the SEP-0011 asset on SACs
+  });
+  return `[${parts.join(", ")}]`;
 }
 
 const TRANSFER_TOPIC = StellarSdk.xdr.ScVal.scvSymbol("transfer").toXDR("base64");

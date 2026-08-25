@@ -19,6 +19,8 @@ export const XLM_SAC =
 export const EXCHANGE_G = process.env.NEXT_PUBLIC_EXCHANGE_G || "";
 export const USER_G = process.env.NEXT_PUBLIC_USER_G || "";
 export const USER_CONTRACT_C = process.env.NEXT_PUBLIC_USER_CONTRACT_C || "";
+/** Verifier contract the smart account's ed25519 signer is registered against. */
+export const ED25519_VERIFIER = process.env.NEXT_PUBLIC_ED25519_VERIFIER || "";
 export const DEPOSIT_ID = process.env.NEXT_PUBLIC_DEPOSIT_ID || "1234566789";
 
 /** A read-only RPC server instance (browser-safe). */

@@ -82,7 +82,7 @@ const MODEL_OPTIONS: {
     meaning: "Off-ramp — the user sends crypto and receives fiat.",
     bullets: [
       "Persistent address tracking — any incoming crypto transfer from the user's address is processed automatically.",
-      "A single off-ramp intent on the user's account, optionally pinned to an amount — used for locked-token cases where the transfer must match exactly.",
+      "A single off-ramp intent on the user's account, optionally pinned to an amount — needed when the rate is locked to an exact amount, so the transfer must match it.",
     ],
   },
 ];
@@ -258,8 +258,7 @@ export function GuidedIncoming() {
   const effTokenKey = committed1?.tokenKey ?? tokenKey;
   const effTokens = effAccountType ? getTokensForAccount(effAccountType) : [];
   const effToken = effTokens.find((t) => t.key === effTokenKey);
-  const effTokenLabel =
-    effToken?.symbol === "SEP41" ? "SEP-41 token" : effToken?.symbol;
+  const effTokenLabel = effToken?.symbol;
   const effSourceAddr = effAccountType === "C" ? USER_CONTRACT_C : USER_G;
   const effModel = committed2?.model ?? model;
   const effIsRamp = effModel === "ramp";
@@ -409,7 +408,7 @@ export function GuidedIncoming() {
     if (!canOpen(n)) return;
     // Leaving a step with an unconfirmed edit reverts the buffer to its
     // committed snapshot — the change only takes effect via the step's
-    // "Change deposit information" button, never by navigating past it.
+    // "Update selection" button, never by navigating past it.
     if (openStep === 1 && n !== 1 && step1Changed && committed1) {
       setAccountType(committed1.accountType);
       setTokenKey(committed1.tokenKey);
@@ -459,9 +458,15 @@ export function GuidedIncoming() {
           Pick where the incoming transfer comes from and which token to send. A{" "}
           <strong>Classic Account (G address)</strong> sends one of two ways — a{" "}
           <strong>payment op</strong> or a <strong>token call</strong> — and a{" "}
-          <strong>Contract Account (C address)</strong> drives the token&apos;s{" "}
-          <code className="font-mono">transfer</code> through a contract call.
-          All three of these send paths surface identically in the{" "}
+          <strong>Contract Account (C address)</strong> — here an OpenZeppelin
+          smart account — drives the token&apos;s{" "}
+          <code className="font-mono">transfer</code> through its{" "}
+          <code className="font-mono">execute</code> entry point, which it only
+          runs against a signature its own{" "}
+          <DocLink doc="requireAuth">
+            <code className="font-mono">__check_auth</code>
+          </DocLink>{" "}
+          accepts. All three send paths surface identically in the{" "}
           <DocLink doc="cap67">unified event stream</DocLink>.
         </p>
 
@@ -629,10 +634,10 @@ export function GuidedIncoming() {
             </dl>
             <p className="mt-2">
               For this demo the intent is pinned to{" "}
-              <strong>{INTENT_AMOUNT} {effTokenLabel}</strong>{" "}— this matters for
-              locked-token cases where the rate is quoted for an exact amount. A
-              ramp that doesn&apos;t need an amount match can drop that comparison
-              and match on the address alone.
+              <strong>{INTENT_AMOUNT} {effTokenLabel}</strong>{" "}— this matters when
+              the rate is quoted for an exact amount. A ramp that doesn&apos;t
+              need an amount match can drop that comparison and match on the
+              address alone.
             </p>
             </div>
           </div>
@@ -711,7 +716,7 @@ export function GuidedIncoming() {
       {/* STEP 3 — Send the payment */}
       <AccordionStep
         index={3}
-        title="Send the payment"
+        title="Send the transfer"
         state={stateOf(3, step3Done)}
         locked={!canOpen(3)}
         open={openStep === 3}
@@ -835,7 +840,7 @@ export function GuidedIncoming() {
             </>
           ) : (
             <>
-              Send payment <ArrowRight className="size-4" />
+              Send transfer <ArrowRight className="size-4" />
             </>
           )}
         </Button>
@@ -901,7 +906,7 @@ export function GuidedIncoming() {
           />
         ) : (
           <p className="text-sm text-muted-foreground">
-            Send a payment first to watch it get detected.
+            Send the transfer first to watch it get detected.
           </p>
         )}
       </AccordionStep>
@@ -925,21 +930,21 @@ export function GuidedIncoming() {
     if (effIsRamp) {
       return (
         <>
-          The payment will still be sent, but since the amount ({sentAmount}{" "}
+          The transfer will still be sent, but since the amount ({sentAmount}{" "}
           {effToken?.symbol}) doesn&apos;t match the intent ({INTENT_AMOUNT}{" "}
           {effToken?.symbol}), the ramp will receive the funds but{" "}
-          <strong>won&apos;t complete the off-ramp intent or token purchase</strong>.
+          <strong>won&apos;t complete the off-ramp intent</strong>.
         </>
       );
     }
     // Exchange model: only a changed deposit id breaks the match.
     return (
       <>
-        The payment will still be sent, but since the {idLabel.toLowerCase()} (
+        The transfer will still be sent, but since the {idLabel.toLowerCase()} (
         {sentDepositId || "—"}) doesn&apos;t match the deposit intent (
         {DEPOSIT_ID}), the exchange will receive the funds in its base account
-        but <strong>won&apos;t complete the deposit intent or token purchase</strong>{" "}
-        — it can&apos;t attribute the payment to the user&apos;s account.
+        but <strong>won&apos;t complete the deposit intent</strong>{" "}
+        — it can&apos;t attribute the transfer to the user&apos;s account.
       </>
     );
   }
@@ -965,9 +970,6 @@ function UserInstructionPreview({
   depositId: string;
   muxedAddr: string;
 }) {
-  // The selector exposes the spec name "SEP41" as the token symbol, but a real
-  // customer would only ever see a ticker — show a neutral placeholder instead.
-  const displaySymbol = symbol === "SEP41" ? "TKN" : symbol;
   return (
     <div className="mt-4">
       <div className="type-title mb-1.5 flex items-center gap-1.5 text-foreground">
@@ -984,7 +986,7 @@ function UserInstructionPreview({
       <div className="pointer-events-none select-none overflow-hidden rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300">
         <div className="bg-slate-200/70 px-4 py-2.5 dark:bg-slate-800/70">
           <p className="type-title text-slate-900 dark:text-slate-100">
-            Deposit {displaySymbol}
+            Deposit {symbol}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Stellar network
@@ -1015,7 +1017,7 @@ function UserInstructionPreview({
                 <Info className="mt-0.5 size-3 shrink-0" />
                 <span>
                   This address is unique to your account — no memo needed. Send
-                  any amount of {displaySymbol} to it.
+                  any amount of {symbol} to it.
                 </span>
               </p>
             </>
@@ -1069,7 +1071,7 @@ function StepAction({
     >
       {changed ? (
         <>
-          <Pencil className="size-4" /> Update deposit information
+          <Pencil className="size-4" /> Update selection
         </>
       ) : committed ? (
         <>

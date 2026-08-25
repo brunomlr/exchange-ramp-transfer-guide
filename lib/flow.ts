@@ -69,17 +69,3 @@ export interface WithdrawalSentInfo {
   /** The 64-bit id sent (when idMethod !== "none"). */
   sentId?: string;
 }
-
-export const STEPS = [
-  "Choose source",
-  "Choose model",
-  "Configure transfer",
-  "Send",
-  "Detect",
-] as const;
-
-/** Which panel the app user should be interacting with at a given step. */
-export type Side = "left" | "right";
-export function activeSide(step: number): Side {
-  return step === 2 || step === 5 ? "right" : "left";
-}

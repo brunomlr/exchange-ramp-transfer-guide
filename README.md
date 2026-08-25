@@ -1,7 +1,7 @@
-# Exchange Deposit Simulator
+# Ramps / Exchanges Transfer Simulator
 
-A Stellar testnet demo that simulates depositing to an exchange and **detecting
-the payment in real time using Stellar RPC only — no Horizon**.
+A Stellar testnet demo of moving crypto to and from a ramp or exchange, and
+**detecting it in real time using Stellar RPC only — no Horizon**.
 
 It demonstrates the **CAP-67 unified asset events** (live since Protocol 23): a
 classic `payment`, a SAC `transfer`, and a SEP-41 contract `transfer` all emit
@@ -12,20 +12,29 @@ both Classic (G) and Contract (C) source accounts.
 
 ## How it works
 
-- **Left — user wallet:** choose a source (Classic `G` or Contract `C`),
-  addressing (muxed `M` address, or `G` address + memo for classic XLM), a token,
-  and an amount (prefilled `1`).
-- **Right — exchange:** shows the read-only deposit details (base `G` address,
-  deposit id / memo id, and the combined muxed `M` address).
-- **Send** builds, signs (server-side, in `app/api/send`), and submits via
-  `rpc.sendTransaction` — classic and contract transactions alike.
-- **Live deposit detection** polls `rpc.getEvents` for `transfer` events on the
-  configured token contracts and matches `to_muxed_id` against the deposit id.
-  Each row has a "how it was detected" breakdown (raw topics + data + the match
-  check). For a classic `G` payment that used a **memo**, the memo arrives as the
-  same `to_muxed_id`.
+Two guided walkthroughs, named by the direction the crypto moves relative to the
+ramp/exchange. What each means for the user depends on the model — the exchange
+model (one omnibus account + a per-user id) or the ramp model (tracking a wallet
+address, optionally pinned to an amount).
 
-Only the **deposit** flow is implemented; the Withdrawal tab is a placeholder.
+**`/incoming`** — the user sends crypto in (a *deposit* for an exchange, an
+*off-ramp* for a ramp), in four steps:
+
+1. **Source & token** — Classic (`G`) or Contract (`C`) account, and which token.
+2. **Identification model** — exchange or ramp; this decides the destination and
+   what gets matched on-chain.
+3. **Send** — built and signed server-side in `app/api/send`, submitted with
+   `rpc.sendTransaction`. The id (or amount) is editable, so you can deliberately
+   send something that won't match and watch detection fail.
+4. **Detection** — polls `rpc.getEvents` for `transfer` events and shows a
+   "how it was detected" breakdown: the real topics, the event data, and the
+   match check. For a classic `G` payment that used a **memo**, the memo arrives
+   as the same `to_muxed_id`.
+
+**`/outgoing`** — the ramp/exchange sends crypto out of its own `G` account (a
+*withdrawal*, or an *on-ramp*) to a user `G` or `C` address, in three steps:
+destination & token, build (with the real `@stellar/stellar-sdk` code for the
+transaction shown inline), then send & confirm with the emitted event.
 
 ## Run
 
@@ -46,7 +55,7 @@ Config lives in `.env.local` (see `.env.example`). All addresses/keys are
 | `NEXT_PUBLIC_USER_CONTRACT_C` | User's contract account (sender) — the OpenZeppelin smart account |
 | `NEXT_PUBLIC_ED25519_VERIFIER` | Verifier the smart account's signer is registered against |
 | `NEXT_PUBLIC_XLM_SAC` | Native XLM Stellar Asset Contract |
-| `NEXT_PUBLIC_USDC_SAC` / `NEXT_PUBLIC_SEP41_TOKEN` / `NEXT_PUBLIC_SC_TOKEN` | Optional tokens — each enables its option when set |
+| `NEXT_PUBLIC_USDC_SAC` / `NEXT_PUBLIC_SEP41_TOKEN` | Optional tokens — each enables its option when set |
 | `USER_G_SECRET` / `CONTRACT_SIGNER_SECRET` | **Server-side only** signing secrets |
 
 ## Contracts

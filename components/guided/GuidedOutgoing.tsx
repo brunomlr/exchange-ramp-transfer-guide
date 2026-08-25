@@ -42,6 +42,7 @@ import {
   explorerAccountUrl,
   explorerContractUrl,
 } from "@/lib/stellar";
+import { assetTicker, formatTopics } from "@/lib/events";
 import { getWithdrawalTokens, type AccountType } from "@/lib/tokens";
 import type {
   SendStatus,
@@ -820,9 +821,12 @@ function buildNarrative(
     <>
       Once it lands, the asset contract emits a{" "}
       <DocLink doc="cap67"><strong>CAP-67 unified transfer event</strong></DocLink>{" "}
-      — topics{" "}
-      <code className="font-mono">[&quot;transfer&quot;, from, to, asset]</code>{" "}
-      with the amount in the data — identical in shape across all three models.
+      with the amount in the data — the same signal for a classic payment, a{" "}
+      <DocLink doc="sac">SAC</DocLink> transfer and a{" "}
+      <DocLink doc="sep41">SEP-41</DocLink> transfer alike. Only the topic list
+      differs: a SAC appends the asset string as a fourth topic, a custom
+      SEP-41 token emits just{" "}
+      <code className="font-mono">[&quot;transfer&quot;, from, to]</code>.
     </>
   );
 
@@ -894,10 +898,9 @@ function IdMethodPicker({
           there is no <code className="font-mono">MuxedContract</code>{" "}form. A tx
           memo would ride along but the contract can&apos;t read it. For now,
           tagging a transfer to a contract means putting the id in the
-          call&apos;s arguments (the contract has to expose a parameter for it)
-          — <strong>native routing-id support for contract destinations
-          isn&apos;t available yet, but it&apos;s expected to land in a future
-          update.</strong>
+          call&apos;s arguments — <strong>the contract has to expose a parameter
+          for it</strong>, since the protocol offers no address-level equivalent
+          of muxing for a <code className="font-mono">C…</code> destination.
         </DisabledNote>
       )}
       {destType === "G" && !avail.memo && (
@@ -1159,7 +1162,8 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
           </Badge>
           {info.event ? (
             <span className="font-mono font-medium">
-              {info.event.amountDisplay} {assetSymbol(info.event.asset)}
+              {info.event.amountDisplay}{" "}
+              {assetTicker(info.event.asset, info.tokenSymbol)}
             </span>
           ) : (
             <span className="text-muted-foreground">not indexed yet</span>
@@ -1168,14 +1172,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
 
         {info.event ? (
           <>
-            <KV k="topics">
-              [&quot;transfer&quot;, {shorten(info.event.from)},{" "}
-              {shorten(info.event.to)}
-              {info.event.asset && info.event.asset !== info.event.to
-                ? `, "${info.event.asset}"`
-                : ""}
-              ]
-            </KV>
+            <KV k="topics">{formatTopics(info.event.topicsRaw)}</KV>
             <KV k="data">
               <pre className="mt-1 overflow-x-auto rounded bg-background p-2 font-mono text-2xs leading-relaxed">
                 {info.event.dataRaw}
@@ -1313,9 +1310,4 @@ function KV({ k, children }: { k: string; children: React.ReactNode }) {
       <span className="font-mono break-all">{children}</span>
     </div>
   );
-}
-
-function assetSymbol(sep11: string): string {
-  if (sep11 === "native") return "XLM";
-  return sep11.split(":")[0] || sep11;
 }
