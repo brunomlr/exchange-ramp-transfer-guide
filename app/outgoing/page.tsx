@@ -21,7 +21,7 @@ export default function GuidedOutgoingPage() {
         </h1>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
           The ramp or exchange sends crypto out of its own G account to a
-          user&apos;s G address or C address — a <strong>withdrawal</strong> in
+          user’s G address or C address — a <strong>withdrawal</strong> in
           the exchange model, an <strong>on-ramp</strong> (fiat in, crypto out)
           in the ramp model. Walk through it one step at a time and see how the
           transaction is built and sent in each model.

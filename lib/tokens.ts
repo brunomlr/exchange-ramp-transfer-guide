@@ -43,7 +43,7 @@ const G_TOKENS: TokenOption[] = [
     mechanism: "contract-transfer",
     enabled: !!USDC_SAC,
     envVar: "NEXT_PUBLIC_USDC_SAC",
-    note: "Classic asset moved via its Stellar Asset Contract (token.transfer). Needs a USDC trustline and balance on both accounts — top up from Circle's testnet faucet.",
+    note: "Classic asset moved via its Stellar Asset Contract (token.transfer). The G account needs a USDC trustline and a balance — testnet USDC comes from Circle's faucet.",
   },
   {
     key: "sep41",
@@ -76,7 +76,7 @@ const C_TOKENS: TokenOption[] = [
     mechanism: "contract-transfer",
     enabled: !!USDC_SAC,
     envVar: "NEXT_PUBLIC_USDC_SAC",
-    note: "USDC Stellar Asset Contract transfer driven by the contract. Needs a USDC trustline and balance on both accounts — top up from Circle's testnet faucet.",
+    note: "USDC Stellar Asset Contract transfer driven by the contract. The smart account needs a USDC balance — a contract holds SAC balances without a trustline, so send it some from a funded G account.",
   },
   {
     key: "sep41",

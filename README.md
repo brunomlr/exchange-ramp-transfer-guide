@@ -56,7 +56,8 @@ Config lives in `.env.local` (see `.env.example`). All addresses/keys are
 | `NEXT_PUBLIC_ED25519_VERIFIER` | Verifier the smart account's signer is registered against |
 | `NEXT_PUBLIC_XLM_SAC` | Native XLM Stellar Asset Contract |
 | `NEXT_PUBLIC_USDC_SAC` / `NEXT_PUBLIC_SEP41_TOKEN` | Optional tokens — each enables its option when set |
-| `USER_G_SECRET` / `CONTRACT_SIGNER_SECRET` | **Server-side only** signing secrets |
+| `USER_G_SECRET` / `CONTRACT_SIGNER_SECRET` | **Server-side only** — sign deposits (`/api/send`): the G wallet, and the smart account's registered signer |
+| `EXCHANGE_G_SECRET` | **Server-side only** — signs withdrawals (`/api/withdraw`) from the exchange's G account |
 
 ## Contracts
 
@@ -102,9 +103,11 @@ rewrites the derived values in `.env.local` (keeping a `.env.local.bak`). Then
 | `--skip-build` | Reuse the wasm already in `contracts/target` |
 | `--dry-run` | Deploy and fund, but print the env values instead of writing them |
 
-The one thing it can't do is give you testnet **USDC** — those balances come
-from [Circle's faucet](https://faucet.circle.com). Until you top the accounts
-up, the USDC option will fail even though the trustlines exist.
+The one thing it can't mint is testnet **USDC**. The G accounts get theirs from
+[Circle's faucet](https://faucet.circle.com); the smart account holds whatever a
+funded G account sends it (a contract keeps a SAC balance without a trustline).
+Until an account holds USDC, its USDC option fails with the SAC's
+`Error(Contract, #10)` — insufficient balance.
 
 ### How the C account authorizes a deposit
 

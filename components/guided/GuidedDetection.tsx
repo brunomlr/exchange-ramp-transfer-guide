@@ -90,7 +90,7 @@ export function GuidedDetection({
       {!shown ? (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
           <ArrowDownToLine className="size-5 motion-safe:animate-bounce" />
-          Watching the unified event stream for the user&apos;s transfer…
+          Watching the unified event stream for the user’s transfer…
           <span className="text-xs">
             The detection summary appears automatically once the event lands.
           </span>
@@ -240,8 +240,8 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
         The user sent {c.tokenSymbol} from a{" "}
         <strong>Contract Account (C address)</strong> — an OpenZeppelin smart
         account. Its <code className="font-mono">execute</code> entry point
-        invoked the token&apos;s <code className="font-mono">transfer</code>,
-        authorized by a signature the account&apos;s{" "}
+        invoked the token’s <code className="font-mono">transfer</code>,
+        authorized by a signature the account’s{" "}
         <DocLink doc="requireAuth">
           <code className="font-mono">__check_auth</code>
         </DocLink>{" "}
@@ -260,7 +260,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
       <>
         The user sent {c.tokenSymbol} from a{" "}
         <strong>Classic Account (G address)</strong>{" "}by calling the token
-        contract&apos;s{" "}
+        contract’s{" "}
         <code className="font-mono">transfer</code>.
       </>
     );
@@ -275,7 +275,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
       topic; a custom <DocLink doc="sep41">SEP-41</DocLink> token emits just{" "}
       <code className="font-mono">[&quot;transfer&quot;, from, to]</code> — the
       arity differs, the <code className="font-mono">to_muxed_id</code> check
-      doesn&apos;t.
+      doesn’t.
     </>
   );
 
@@ -304,10 +304,10 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
     lines.push(
       <>
         The exchange reads <code className="font-mono">to_muxed_id</code>{" "}from
-        every transfer and compares it to the user&apos;s deposit id (
+        every transfer and compares it to the user’s deposit id (
         <code className="font-mono">{c.intentDepositId}</code>) — one universal
         check across XLM, <DocLink doc="sac">SAC</DocLink> and{" "}
-        <DocLink doc="sep41">SEP-41</DocLink>. The amount isn&apos;t part of the
+        <DocLink doc="sep41">SEP-41</DocLink>. The amount isn’t part of the
         match.
       </>
     );
@@ -317,7 +317,7 @@ function narrative(c: DetectionCase, t: DetectedTransfer): React.ReactNode[] {
         The ramp uses{" "}
         <strong>no <DocLink doc="memo">memo</DocLink> or{" "}
         <DocLink doc="muxed">muxing</DocLink></strong>. It watches for a
-        transfer from the user&apos;s wallet (
+        transfer from the user’s wallet (
         <code className="font-mono">{shorten(c.sourceAddr)}</code>) of exactly
         the intent amount (
         <code className="font-mono">{c.intentAmountStroops}</code> stroops) and
@@ -340,14 +340,14 @@ function outcomeLine(
       <>
         <code className="font-mono">from</code> and{" "}
         <code className="font-mono">amount</code>{" "}match the intent — the ramp
-        ties the transfer to the user&apos;s off-ramp intent and completes it.
+        ties the transfer to the user’s off-ramp intent and completes it.
       </>
     ) : (
       <>
-        The amount sent ({sentAmount} {c.tokenSymbol}) doesn&apos;t match the
+        The amount sent ({sentAmount} {c.tokenSymbol}) doesn’t match the
         intent ({intentAmount} {c.tokenSymbol}). The ramp received the funds at
-        its address but can&apos;t match the intent, so the off-ramp{" "}
-        <strong>won&apos;t complete</strong>.
+        its address but can’t match the intent, so the off-ramp{" "}
+        <strong>won’t complete</strong>.
       </>
     );
   }
@@ -355,18 +355,18 @@ function outcomeLine(
     return (
       <>
         <code className="font-mono">to_muxed_id</code>{" "}
-        doesn&apos;t match the user&apos;s deposit id (<code className="font-mono">{c.intentDepositId}</code>). The
-        exchange received the funds in its base account but can&apos;t attribute
-        them to the user, so the deposit intent <strong>won&apos;t complete</strong>.
+        doesn’t match the user’s deposit id (<code className="font-mono">{c.intentDepositId}</code>). The
+        exchange received the funds in its base account but can’t attribute
+        them to the user, so the deposit intent <strong>won’t complete</strong>.
       </>
     );
   }
   return (
     <>
       <code className="font-mono">to_muxed_id</code>{" "}
-      matches the user&apos;s deposit id — the
-      deposit is attributed to the user&apos;s account and the intent completes. The amount
-      isn&apos;t part of the match for the exchange model.
+      matches the user’s deposit id — the
+      deposit is attributed to the user’s account and the intent completes. The amount
+      isn’t part of the match for the exchange model.
     </>
   );
 }

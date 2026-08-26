@@ -161,9 +161,9 @@ function humanSummary(
     destType === "G" ? "a user's Classic (G) address" : "a user's Contract (C) address";
   const idSuffix =
     idMethod === "muxed"
-      ? ` with a muxed id (${idValue})`
+      ? ` (muxed id ${idValue})`
       : idMethod === "memo"
-        ? ` with memo id ${idValue}`
+        ? ` (memo id ${idValue})`
         : "";
   if (mechanism === "classic-native") {
     return `The exchange sent ${amount} ${tokenSymbol} from its G account to ${dest}${idSuffix} with a classic payment operation.`;

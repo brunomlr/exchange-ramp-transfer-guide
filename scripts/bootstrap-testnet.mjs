@@ -366,7 +366,7 @@ Done. The demo is live again on ${RPC}.
   USDC SAC        ${usdcSac}
 ${
   usdcReady
-    ? "\nUSDC trustlines are in place, but the accounts hold 0 USDC — testnet USDC\ncomes from Circle's faucet (https://faucet.circle.com), which this script\ncannot drive. The USDC option will fail until you top them up."
+    ? "\nUSDC trustlines are in place. Testnet USDC itself comes from Circle's faucet\n(https://faucet.circle.com), which this script cannot drive — after a reset the\nG accounts hold none, and the smart account only holds what a G account sends\nit. An account without USDC fails that option with Error(Contract, #10)."
     : "\nUSDC is not usable yet: the trustlines could not be created, most likely\nbecause Circle's testnet issuer has not been recreated after the reset.\nRe-run this script later, or use `node scripts/setup-usdc-trustline.mjs`."
 }
 

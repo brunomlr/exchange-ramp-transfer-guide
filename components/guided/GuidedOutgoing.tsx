@@ -356,7 +356,7 @@ export function GuidedOutgoing() {
           href={EXCHANGE_G ? explorerAccountUrl(EXCHANGE_G) : undefined}
         />
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Every outgoing transfer is signed by and sent from the ramp/exchange&apos;s
+          Every outgoing transfer is signed by and sent from the ramp/exchange’s
           Classic (G) account. Only the destination and token change.
         </p>
       </div>
@@ -389,7 +389,7 @@ export function GuidedOutgoing() {
           decides how the transaction is built: a{" "}
           <strong>Classic Account (G address)</strong> can take a native payment,
           while a <strong>Contract Account (C address)</strong> can only be
-          reached through a <DocLink doc="sep41">token contract</DocLink>&apos;s{" "}
+          reached through a <DocLink doc="sep41">token contract</DocLink>’s{" "}
           <code className="font-mono">transfer</code>.
         </p>
 
@@ -694,7 +694,7 @@ function BuildExplainer({
 
       <div className="rounded-lg bg-muted/50 p-3">
         <p className="type-eyebrow mb-1.5 text-muted-foreground">
-          How it&apos;s built
+          How it’s built
         </p>
         <ol className="space-y-1.5 text-sm leading-relaxed text-muted-foreground">
           {buildNarrative(destType, tokenSymbol, isClassic, idMethod, idValue).map((line, i) => (
@@ -742,12 +742,12 @@ function buildNarrative(
   const idDisplay = idValue || "the routing id";
   const toClause = muxed ? (
     <>
-      <code className="font-mono">to</code> the user&apos;s{" "}
+      <code className="font-mono">to</code> the user’s{" "}
       <code className="font-mono">M…</code> address
     </>
   ) : (
     <>
-      <code className="font-mono">to</code>{" "}the user&apos;s G address
+      <code className="font-mono">to</code>{" "}the user’s G address
     </>
   );
 
@@ -761,31 +761,31 @@ function buildNarrative(
     );
     lines.push(
       <>
-        It signs with the exchange&apos;s key and submits over{" "}
+        It signs with the exchange’s key and submits over{" "}
         <DocLink doc="rpc">RPC</DocLink> with{" "}
         <DocLink doc="sendTransaction" code>sendTransaction</DocLink> — no{" "}
         <code className="font-mono">prepareTransaction</code>{" "}needed, since
-        there&apos;s no <DocLink doc="soroban">Soroban</DocLink> footprint to compute.
+        there’s no <DocLink doc="soroban">Soroban</DocLink> footprint to compute.
       </>
     );
   } else {
     if (destType === "C") {
       lines.push(
         <>
-          A <strong>Contract (C) address can&apos;t receive a classic payment</strong>
-          , so even XLM moves through the asset&apos;s{" "}
+          A <strong>Contract (C) address can’t receive a classic payment</strong>
+          , so even XLM moves through the asset’s{" "}
           <DocLink doc="sac">token contract</DocLink>. The
           exchange invokes <code className="font-mono">transfer</code> with{" "}
-          <code className="font-mono">to</code> = the user&apos;s C address.
+          <code className="font-mono">to</code> = the user’s C address.
         </>
       );
     } else {
       lines.push(
         <>
-          The exchange invokes the {tokenSymbol} contract&apos;s{" "}
+          The exchange invokes the {tokenSymbol} contract’s{" "}
           <code className="font-mono">transfer</code> with{" "}
           <code className="font-mono">from</code> = its own G account and{" "}
-          <code className="font-mono">to</code> = the user&apos;s{" "}
+          <code className="font-mono">to</code> = the user’s{" "}
           {muxed ? <code className="font-mono">M…</code> : "G"} address.
         </>
       );
@@ -796,7 +796,8 @@ function buildNarrative(
         and the <code className="font-mono">from</code></strong>, its signature
         satisfies the{" "}
         <DocLink doc="requireAuth" code>require_auth</DocLink> on the
-        transfer — no extra authorization entry.
+        transfer — its auth entry runs on source-account credentials, so nothing
+        separate needs signing.
       </>
     );
     lines.push(
@@ -812,7 +813,7 @@ function buildNarrative(
   if (muxed) {
     lines.push(
       <>
-        Because the destination carries a routing id, the user&apos;s base G and
+        Because the destination carries a routing id, the user’s base G and
         the id <code className="font-mono">{idDisplay}</code> are{" "}
         <strong>folded together into a single muxed{" "}
         <code className="font-mono">M…</code> address</strong>, used as the{" "}
@@ -874,7 +875,7 @@ function IdMethodPicker({
         If the destination is itself custodial (say, another exchange) it may
         need an id to credit the right user. An <strong>account (G)</strong>{" "}
         carries that id in the address (muxed) or a memo; a{" "}
-        <strong>contract (C)</strong>{" "}can&apos;t — its id has to travel as an
+        <strong>contract (C)</strong>{" "}can’t — its id has to travel as an
         argument inside the <code className="font-mono">transfer</code> call.
       </p>
 
@@ -910,11 +911,10 @@ function IdMethodPicker({
         <DisabledNote>
           <strong>Muxed and memo are off for a contract destination.</strong> A
           muxed address only wraps an <em>account</em> key, so a{" "}
-          <code className="font-mono">C…</code>{" "}address can&apos;t be muxed —
+          <code className="font-mono">C…</code>{" "}address can’t be muxed —
           there is no <code className="font-mono">MuxedContract</code>{" "}form. A tx
-          memo would ride along but the contract can&apos;t read it. For now,
-          tagging a transfer to a contract means putting the id in the
-          call&apos;s arguments — <strong>the contract has to expose a parameter
+          memo would ride along but the contract can’t read it. Tagging a transfer to a contract means putting the id in the
+          call’s arguments — <strong>the contract has to expose a parameter
           for it</strong>, since the protocol offers no address-level equivalent
           of muxing for a <code className="font-mono">C…</code> destination.
         </DisabledNote>
@@ -955,7 +955,7 @@ function IdMethodPicker({
                 The id is folded together with the base{" "}
                 <code className="font-mono">G</code> into a single{" "}
                 <code className="font-mono">M…</code>{" "}address, used as the
-                payment&apos;s <code className="font-mono">destination</code>. The
+                payment’s <code className="font-mono">destination</code>. The
                 base <code className="font-mono">G</code> still receives the funds.
               </>
             ) : (
@@ -1210,7 +1210,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
                 ) : info.idMethod !== "none" ? (
                   <>
                     A {info.idMethod} id ({info.sentId}) was sent, but the event
-                    index hasn&apos;t surfaced its{" "}
+                    index hasn’t surfaced its{" "}
                     <code className="font-mono">to_muxed_id</code> yet — check
                     the explorer.
                   </>
@@ -1226,7 +1226,7 @@ function WithdrawalResult({ info }: { info: WithdrawalSentInfo }) {
           </>
         ) : (
           <p className="text-muted-foreground">
-            The transaction confirmed, but the event index hasn&apos;t caught up
+            The transaction confirmed, but the event index hasn’t caught up
             yet. Open it on the explorer to see the emitted{" "}
             <code className="font-mono">transfer</code> event.
           </p>

@@ -460,7 +460,7 @@ export function GuidedIncoming() {
           <strong>Classic Account (G address)</strong> sends one of two ways — a{" "}
           <strong>payment op</strong> or a <strong>token call</strong> — and a{" "}
           <strong>Contract Account (C address)</strong> — here an OpenZeppelin
-          smart account — drives the token&apos;s{" "}
+          smart account — drives the token’s{" "}
           <code className="font-mono">transfer</code> through its{" "}
           <code className="font-mono">execute</code> entry point, which it only
           runs against a signature its own{" "}
@@ -519,7 +519,7 @@ export function GuidedIncoming() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {selectedToken.note}{" "}
                 <span className="italic">
-                  However it&apos;s sent, it surfaces as the same transfer event
+                  However it’s sent, it surfaces as the same transfer event
                   — detection is identical across tokens.
                 </span>
               </p>
@@ -527,7 +527,7 @@ export function GuidedIncoming() {
             {accountType && (
               <div className="mt-3">
                 <Label className="mb-1.5 block text-foreground">
-                  User&apos;s external wallet address
+                  User’s external wallet address
                 </Label>
                 <AddressChip value={sourceAddr || "— not configured —"} />
               </div>
@@ -559,7 +559,7 @@ export function GuidedIncoming() {
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          Choose how the Ramp/Exchange identifies the user&apos;s incoming
+          Choose how the Ramp/Exchange identifies the user’s incoming
           transfer. This
           decides the destination and what gets matched on-chain.
         </p>
@@ -635,7 +635,7 @@ export function GuidedIncoming() {
             <p className="mt-2">
               For this demo the intent is pinned to{" "}
               <strong>{INTENT_AMOUNT} {effTokenLabel}</strong>{" "}— this matters when
-              the rate is quoted for an exact amount. A ramp that doesn&apos;t
+              the rate is quoted for an exact amount. A ramp that doesn’t
               need an amount match can drop that comparison and match on the
               address alone.
             </p>
@@ -690,18 +690,18 @@ export function GuidedIncoming() {
                 or a <strong>G address + <DocLink doc="memo">memo</DocLink></strong>{" "}
                 for classic XLM. The id the user
                 sends arrives on-chain as <code className="font-mono">to_muxed_id</code>,
-                matched against the user&apos;s deposit id{" "}
+                matched against the user’s deposit id{" "}
                 <code className="font-mono">{DEPOSIT_ID}</code>.
               </>
             ) : (
               <>
                 <strong>Next:</strong> the user sends{" "}
                 <strong>{INTENT_AMOUNT}</strong> {effToken?.symbol}{" "}
-                from the user&apos;s wallet to the ramp&apos;s plain address. The ramp matches the
+                from the user’s wallet to the ramp’s plain address. The ramp matches the
                 intent on <code className="font-mono">from + amount</code> — no{" "}
                 <DocLink doc="memo">memo</DocLink> or{" "}
                 <DocLink doc="muxed">muxing</DocLink>. When the ramp is integrated into the wallet, the
-                integration already exposes the user&apos;s address, so the user
+                integration already exposes the user’s address, so the user
                 has nothing to copy, paste, or enter — they just confirm.
               </>
             )}
@@ -812,7 +812,7 @@ export function GuidedIncoming() {
         {(idChanged || amountChanged) && (
           <Alert variant="destructive" className="mt-3">
             <AlertTriangle className="size-4" />
-            <AlertTitle>This won&apos;t match the intent</AlertTitle>
+            <AlertTitle>This won’t match the intent</AlertTitle>
             <AlertDescription>{mismatchMessage()}</AlertDescription>
           </Alert>
         )}
@@ -934,9 +934,9 @@ export function GuidedIncoming() {
       return (
         <>
           The transfer will still be sent, but since the amount ({sentAmount}{" "}
-          {effToken?.symbol}) doesn&apos;t match the intent ({INTENT_AMOUNT}{" "}
+          {effToken?.symbol}) doesn’t match the intent ({INTENT_AMOUNT}{" "}
           {effToken?.symbol}), the ramp will receive the funds but{" "}
-          <strong>won&apos;t complete the off-ramp intent</strong>.
+          <strong>won’t complete the off-ramp intent</strong>.
         </>
       );
     }
@@ -944,10 +944,10 @@ export function GuidedIncoming() {
     return (
       <>
         The transfer will still be sent, but since the {idLabel.toLowerCase()} (
-        {sentDepositId || "—"}) doesn&apos;t match the deposit intent (
+        {sentDepositId || "—"}) doesn’t match the deposit intent (
         {DEPOSIT_ID}), the exchange will receive the funds in its base account
-        but <strong>won&apos;t complete the deposit intent</strong>{" "}
-        — it can&apos;t attribute the transfer to the user&apos;s account.
+        but <strong>won’t complete the deposit intent</strong>{" "}
+        — it can’t attribute the transfer to the user’s account.
       </>
     );
   }
@@ -1008,7 +1008,7 @@ function UserInstructionPreview({
                 <AppValue value={depositId} />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Send with this exact memo. Deposits sent to the address{" "}
-                  <strong>without the memo can&apos;t be credited</strong> to
+                  <strong>without the memo can’t be credited</strong> to
                   your account.
                 </p>
               </div>
