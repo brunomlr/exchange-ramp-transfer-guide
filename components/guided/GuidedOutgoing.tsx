@@ -35,7 +35,6 @@ import { AddressChip } from "@/components/AddressChip";
 import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
-import { FlowProgress } from "@/components/guided/FlowProgress";
 import { RadioCard } from "@/components/guided/RadioCard";
 import { Highlight, themes } from "prism-react-renderer";
 import { cn } from "@/lib/utils";
@@ -211,10 +210,6 @@ export function GuidedOutgoing() {
   const step1Done = !!committed1;
   const step2Done = !!committed2;
   const step3Done = sendStatus === "success" && !!sentInfo;
-  const completedSteps =
-    Number(step1Done) + Number(step2Done) + Number(step3Done);
-  const currentProgressStep =
-    openStep || (!step1Done ? 1 : !step2Done ? 2 : 3);
 
   const step1Changed =
     !!committed1 &&
@@ -340,11 +335,6 @@ export function GuidedOutgoing() {
     <div className="flow-outgoing space-y-3">
       {/* Summary — which way the funds move in this flow */}
       <FundsFlowSummary direction="outgoing" />
-      <FlowProgress
-        direction="outgoing"
-        currentStep={currentProgressStep}
-        completedSteps={completedSteps}
-      />
 
       {/* Source: always the exchange's hot G account */}
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">

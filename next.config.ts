@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow the local Orca preview proxy to load Next development assets.
+  allowedDevOrigins: ["exchange-simulator.orca.localhost"],
   // Pin the workspace root so Next doesn't pick a parent lockfile.
   turbopack: {
     root: __dirname,

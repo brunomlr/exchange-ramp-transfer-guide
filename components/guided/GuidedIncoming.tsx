@@ -25,7 +25,6 @@ import { AddressChip } from "@/components/AddressChip";
 import { DocLink } from "@/components/DocLink";
 import { AccordionStep, type StepState } from "@/components/guided/AccordionStep";
 import { FundsFlowSummary } from "@/components/guided/FundsFlowSummary";
-import { FlowProgress } from "@/components/guided/FlowProgress";
 import { RadioCard } from "@/components/guided/RadioCard";
 import {
   GuidedDetection,
@@ -233,13 +232,6 @@ export function GuidedIncoming() {
   const step1Done = !!committed1;
   const step2Done = !!committed2;
   const step3Done = sendStatus === "success" && !!sentInfo;
-  const completedSteps =
-    Number(step1Done) +
-    Number(step2Done) +
-    Number(step3Done) +
-    Number(detectionMatched !== null);
-  const currentProgressStep =
-    openStep || (!step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : 4);
 
   const step1Changed =
     !!committed1 &&
@@ -427,11 +419,6 @@ export function GuidedIncoming() {
     <div className="flow-incoming space-y-3">
       {/* Summary — which way the funds move in this flow */}
       <FundsFlowSummary direction="incoming" />
-      <FlowProgress
-        direction="incoming"
-        currentStep={currentProgressStep}
-        completedSteps={completedSteps}
-      />
 
       {/* STEP 1 — User account type & token */}
       <AccordionStep
