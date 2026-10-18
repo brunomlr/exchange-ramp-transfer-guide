@@ -44,6 +44,10 @@ import {
   USER_CONTRACT_C,
   shorten,
   toStroops,
+  isValidAmount,
+  isValidU64,
+  normalizeIdInput,
+  MAX_AMOUNT,
   explorerTxUrl,
   explorerAccountUrl,
   explorerContractUrl,
@@ -84,6 +88,11 @@ function normalizeIdMethod(
   if (method === "muxed" && !avail.muxed) return "none";
   if (method === "memo" && !avail.memo) return avail.muxed ? "muxed" : "none";
   return method;
+}
+
+/** A sendable amount: decimal, ≤7 places, above 0, within the demo cap. */
+function amountOk(amount: string): boolean {
+  return isValidAmount(amount) && Number(amount) <= MAX_AMOUNT;
 }
 
 /** Default withdrawal amount for the demo. */
@@ -235,8 +244,8 @@ export function GuidedOutgoing() {
   const effAmount = committed2?.amount ?? amount;
   const effIdMethod = committed2?.idMethod ?? idMethod;
   const effIdValue = committed2?.idValue ?? idValue;
-  const effAmountValid = Number(effAmount) > 0;
-  const effIdValid = effIdMethod === "none" || /^\d+$/.test(effIdValue);
+  const effAmountValid = amountOk(effAmount);
+  const effIdValid = effIdMethod === "none" || isValidU64(effIdValue);
 
   // ---- resets ----
   function resetSend() {
@@ -255,27 +264,24 @@ export function GuidedOutgoing() {
     setDestType(t);
     const first = getWithdrawalTokens(t).find((x) => x.enabled);
     setTokenKey(first?.key ?? "");
-    // Default to the first id option ("none"). The user can switch to muxed/memo.
-    setIdMethod("none");
-  }
-  function pickToken(key: string) {
-    setTokenKey(key);
-    const tok = tokens.find((t) => t.key === key);
-    const avail = idAvailability(destType, tok?.mechanism);
-    setIdMethod((m) => normalizeIdMethod(m, avail));
   }
   const canConfirm1 = !!destType && !!selectedToken?.enabled && !!destAddr;
   function confirmStep1() {
     if (!canConfirm1 || !destType) return;
     if (step1Changed) clearFrom2();
+    // Step 2's id method is snapped to the new rails only on commit, so an
+    // unconfirmed step-1 edit never touches step 2.
+    setIdMethod((m) =>
+      normalizeIdMethod(m, idAvailability(destType, selectedToken?.mechanism))
+    );
     setCommitted1({ destType, tokenKey });
     setOpenStep(2);
   }
 
   // ---- step 2 ----
-  const amountValid = Number(amount) > 0;
+  const amountValid = amountOk(amount);
   const idAvail = idAvailability(effDestType, effMechanism);
-  const idValid = idMethod === "none" || /^\d+$/.test(idValue);
+  const idValid = idMethod === "none" || isValidU64(idValue);
   const canConfirm2 = amountValid && idValid;
   function confirmStep2() {
     if (!canConfirm2) return;
@@ -328,6 +334,18 @@ export function GuidedOutgoing() {
   }
   function toggle(n: number) {
     if (!canOpen(n)) return;
+    // Leaving a step with an unconfirmed edit reverts the buffer to its
+    // committed snapshot — the change only takes effect via the step's
+    // "Update" button, never by navigating past it.
+    if (openStep === 1 && n !== 1 && step1Changed && committed1) {
+      setDestType(committed1.destType);
+      setTokenKey(committed1.tokenKey);
+    }
+    if (openStep === 2 && n !== 2 && step2Changed && committed2) {
+      setAmount(committed2.amount);
+      setIdMethod(committed2.idMethod);
+      setIdValue(committed2.idValue);
+    }
     setOpenStep((cur) => (cur === n ? 0 : n));
   }
 
@@ -415,7 +433,7 @@ export function GuidedOutgoing() {
             </Label>
             <RadioGroup
               value={tokenKey}
-              onValueChange={pickToken}
+              onValueChange={setTokenKey}
               aria-label="Token"
               className="sm:grid-cols-3"
             >
@@ -482,7 +500,7 @@ export function GuidedOutgoing() {
       >
         <p className="mb-4 text-sm text-muted-foreground">
           Set the amount, then see exactly how the exchange constructs and signs
-          this transaction for the chosen model.
+          this transaction for the chosen destination and token.
         </p>
 
         <Label className="mb-1.5 block text-foreground">
@@ -496,6 +514,12 @@ export function GuidedOutgoing() {
           onChange={(e) => setAmount(e.target.value)}
           className="w-40"
         />
+        {!amountValid && (
+          <p className="mt-1 text-xs text-destructive">
+            Enter an amount above 0 and up to {MAX_AMOUNT}, with at most 7
+            decimal places.
+          </p>
+        )}
 
         {effDestType && (
           <IdMethodPicker
@@ -633,12 +657,12 @@ function BuildExplainer({
   const id = idValue || "<id>";
   // Contract transfer takes an i128 in the token's base units (stroops),
   // unlike Operation.payment which takes a whole-unit decimal string.
-  const stroops = toStroops(Number(amount) > 0 ? amount : "0").toString();
+  const stroops = toStroops(isValidAmount(amount) ? amount : "0").toString();
 
   // A muxed id is folded into the destination as an M… address (a tx-builder
   // setup line); a memo is attached to the transaction, not the operation.
   const muxSetup = muxed
-    ? `// fold the base G + id ${id} into one M… address\nconst destination = new MuxedAccount(USER_G, "${id}").accountId();\n\n`
+    ? `// fold the base G + id ${id} into one M… address\nconst destination = new MuxedAccount(new Account(USER_G, "0"), "${id}").accountId();\n\n`
     : "";
 
   const pseudo = isClassic
@@ -865,8 +889,9 @@ function IdMethodPicker({
         If the destination is itself custodial (say, another exchange) it may
         need an id to credit the right user. An <strong>account (G)</strong>{" "}
         carries that id in the address (muxed) or a memo; a{" "}
-        <strong>contract (C)</strong>{" "}can’t — its id has to travel as an
-        argument inside the <code className="font-mono">transfer</code> call.
+        <strong>contract (C)</strong>{" "}can’t, and SEP-41{" "}
+        <code className="font-mono">transfer</code> has no id argument — the
+        recipient contract has to expose its own function that takes one.
       </p>
 
       <RadioGroup
@@ -930,13 +955,13 @@ function IdMethodPicker({
             inputMode="numeric"
             pattern="[0-9]*"
             value={idValue}
-            onChange={(e) => onValue(e.target.value)}
+            onChange={(e) => onValue(normalizeIdInput(e.target.value))}
             className="w-48 font-mono"
             placeholder="e.g. 1234567"
           />
           {!idValid && (
             <p className="mt-1 text-xs text-destructive">
-              Enter a positive whole number (u64).
+              Enter a whole number that fits in 64 bits.
             </p>
           )}
           <p className="mt-1.5 text-xs text-muted-foreground">
@@ -1042,7 +1067,7 @@ const sent = await server.sendTransaction(tx); // -> { status: "PENDING", hash }
   }
 
   const tokenConst = TOKEN_CONST[tokenKey] ?? "TOKEN_CONTRACT";
-  const stroops = toStroops(Number(amount) > 0 ? amount : "0").toString();
+  const stroops = toStroops(isValidAmount(amount) ? amount : "0").toString();
   const setup = useMuxed ? muxedSetupSnippet("to", idValue) : "";
   const toLine = useMuxed
     ? `      StellarSdk.Address.fromString(to).toScVal(),          // to (muxed M…)`

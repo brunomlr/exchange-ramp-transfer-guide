@@ -21,7 +21,7 @@ export const USER_G = process.env.NEXT_PUBLIC_USER_G || "";
 export const USER_CONTRACT_C = process.env.NEXT_PUBLIC_USER_CONTRACT_C || "";
 /** Verifier contract the smart account's ed25519 signer is registered against. */
 export const ED25519_VERIFIER = process.env.NEXT_PUBLIC_ED25519_VERIFIER || "";
-export const DEPOSIT_ID = process.env.NEXT_PUBLIC_DEPOSIT_ID || "1234566789";
+export const DEPOSIT_ID = process.env.NEXT_PUBLIC_DEPOSIT_ID || "1234567890";
 
 /** A read-only RPC server instance (browser-safe). */
 export function rpcServer() {
@@ -34,6 +34,36 @@ export function muxedAddress(baseG: string, id: string): string {
     new StellarSdk.Account(baseG, "0"),
     id
   ).accountId();
+}
+
+const U64_MAX = 2n ** 64n - 1n;
+
+/**
+ * Largest amount, in whole units, either API route will move in one request.
+ * The demo's intent is 1; the cap stops a stray (or hostile) request from
+ * emptying the shared testnet wallets.
+ */
+export const MAX_AMOUNT = 100;
+
+/**
+ * A positive decimal amount with at most `decimals` fractional digits — the
+ * only shape `toStroops` and `Operation.payment` both accept. Rejects
+ * exponent notation ("1e3"), which `<input type="number">` lets through.
+ */
+export function isValidAmount(amount: string, decimals = 7): boolean {
+  const re = new RegExp(`^\\d+(\\.\\d{0,${decimals}})?$`);
+  const s = amount.trim();
+  return re.test(s) && toStroops(s, decimals) > 0n;
+}
+
+/** A decimal string that fits a u64 — a valid muxed id or `Memo.id`. */
+export function isValidU64(id: string): boolean {
+  return /^\d+$/.test(id) && BigInt(id) <= U64_MAX;
+}
+
+/** Keep digits only and drop leading zeros, so the id reads as it lands on-chain. */
+export function normalizeIdInput(raw: string): string {
+  return raw.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
 }
 
 /** Stroops (7-decimal) helpers. */

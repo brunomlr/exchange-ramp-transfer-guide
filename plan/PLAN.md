@@ -200,11 +200,10 @@ Compute and display a plain-English summary of what was sent, e.g.:
     requires SDK support for CAP-67 muxed addresses in contract args. Confirm the
     installed `@stellar/stellar-sdk` version supports `Address.fromString("M…")`
     / muxed ScVal; **bump the SDK to the latest 14.x (or current) if needed.**
-  - For the **C source** path, signing follows the existing app's contract-exec
-    pattern (`smart-wallet.ts` / `TransferForm.tsx`): the passkey/admin authorizes
-    the contract's `transfer`. Reuse that approach; if passkey signing is too
-    heavy for the demo, a sponsor/admin-signed `transfer` is acceptable — confirm
-    at implementation which auth path the deployed contract supports.
+  - For the **C source** path: *resolved* — the account is an OpenZeppelin
+    smart account with no admin bypass. Its `execute` entry point is authorized
+    by a signed `AuthPayload` from its one ed25519 signer (see README, "How the C
+    account authorizes a deposit", and `lib/smartAccount.ts`).
 - Amount → stroops: `Math.floor(parseFloat(amount) * 1e7)` for 7-decimal tokens.
 
 ## File / project structure
@@ -307,7 +306,7 @@ SENDER_G_SECRET=[REDACTED]
   needed). Highest-uncertainty item.
 - **Two distinct funded testnet G keys** (sender vs exchange) — generate +
   Friendbot-fund a second if only one exists.
-- **C-account `transfer` auth path** (passkey vs admin/sponsor) — match what the
-  deployed contract actually supports.
+- ~~**C-account `transfer` auth path**~~ — resolved: signed `AuthPayload` via
+  the OpenZeppelin smart account's `execute`, no admin path.
 - **Testnet is Protocol ≥23** so unified events are emitted (it is, as of now;
   verify via `getLatestLedger().protocolVersion`).

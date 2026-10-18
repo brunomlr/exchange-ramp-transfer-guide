@@ -11,10 +11,11 @@
 //   2. build the contracts        (`stellar contract build`, skip with --skip-build)
 //   3. re-wrap the SACs           (native XLM, and USDC if its issuer is up)
 //   4. deploy ed25519-verifier → smart-account → fungible-token
-//   5. fund the smart account with XLM so it can pay its own Soroban fees
-//   6. mint DEMO to the user's G account and to the smart account
-//   7. add USDC trustlines (balances still need Circle's faucet — see the notes)
-//   8. rewrite the derived values in .env.local (a .bak is kept)
+//   5. fund the smart account with XLM (the balance its XLM deposits spend —
+//      fees are paid by the user G), and mint DEMO to the user G, the smart
+//      account and the exchange G (so DEMO withdrawals work from the start)
+//   6. add USDC trustlines (balances still need Circle's faucet — see the notes)
+//   7. rewrite the derived values in .env.local (a .bak is kept)
 //
 // Flags: --skip-build   reuse the wasm already in contracts/target
 //        --dry-run      do everything except writing .env.local
@@ -56,9 +57,9 @@ const FRIENDBOT = "https://friendbot.stellar.org";
 const USDC_ISSUER =
   env.USDC_ISSUER || "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
 
-/** XLM sent to the smart account so it can pay for its own transfers. */
+/** XLM sent to the smart account — the balance its XLM (SAC) deposits spend. */
 const FUND_XLM = 200n;
-/** DEMO minted to each of the G wallet and the smart account. */
+/** DEMO minted to each of the user G, the smart account and the exchange G. */
 const MINT_DEMO = 1000n;
 const DECIMALS = 7;
 const ONE = 10n ** BigInt(DECIMALS);
@@ -103,6 +104,9 @@ async function submit(kp, op, label, { fee = "10000000" } = {}) {
   const sent = await rpc.sendTransaction(final);
   if (sent.status === "ERROR") {
     throw new Error(`${label}: RPC rejected — ${JSON.stringify(sent.errorResult)}`);
+  }
+  if (sent.status === "TRY_AGAIN_LATER") {
+    throw new Error(`${label}: network said TRY_AGAIN_LATER — re-run the script`);
   }
   let res = await rpc.getTransaction(sent.hash);
   for (let i = 0; i < 40 && res.status === "NOT_FOUND"; i++) {
@@ -268,7 +272,7 @@ const tokenId = await deploy(
   "fungible-token"
 );
 
-// ── 5+6. balances ────────────────────────────────────────────────────────
+// ── 5. balances ──────────────────────────────────────────────────────────
 step(5, "Funding the smart account and minting DEMO");
 const i128 = (v) => SDK.nativeToScVal(v, { type: "i128" });
 
@@ -287,6 +291,7 @@ await call(
 for (const [label, addr] of [
   ["user G", user.publicKey()],
   ["smart account", smartAccountId],
+  ["exchange G", exchange.publicKey()],
 ]) {
   await call(
     user,
@@ -297,7 +302,7 @@ for (const [label, addr] of [
   );
 }
 
-// ── 7. USDC trustlines ───────────────────────────────────────────────────
+// ── 6. USDC trustlines ───────────────────────────────────────────────────
 // USDC is a classic asset behind a SAC, so a G account without a trustline
 // makes transfer() fail with Error(Contract, #13). changeTrust is idempotent.
 step(6, "Adding USDC trustlines");
@@ -319,7 +324,7 @@ for (const [label, kp] of [
   }
 }
 
-// ── 8. write .env.local ──────────────────────────────────────────────────
+// ── 7. write .env.local ──────────────────────────────────────────────────
 step(7, "Updating .env.local");
 const derived = {
   NEXT_PUBLIC_USER_G: user.publicKey(),
@@ -366,7 +371,7 @@ Done. The demo is live again on ${RPC}.
   USDC SAC        ${usdcSac}
 ${
   usdcReady
-    ? "\nUSDC trustlines are in place. Testnet USDC itself comes from Circle's faucet\n(https://faucet.circle.com), which this script cannot drive — after a reset the\nG accounts hold none, and the smart account only holds what a G account sends\nit. An account without USDC fails that option with Error(Contract, #10)."
+    ? "\nUSDC trustlines are in place. Testnet USDC itself comes from Circle's faucet\n(https://faucet.circle.com), which this script cannot drive — after a reset the\nG accounts hold none (so outgoing USDC fails until the exchange G is funded),\nand the smart account only holds what a G account sends it. An account without\nUSDC fails that option with Error(Contract, #10)."
     : "\nUSDC is not usable yet: the trustlines could not be created, most likely\nbecause Circle's testnet issuer has not been recreated after the reset.\nRe-run this script later, or use `node scripts/setup-usdc-trustline.mjs`."
 }
 

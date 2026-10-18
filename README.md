@@ -59,6 +59,12 @@ Config lives in `.env.local` (see `.env.example`). All addresses/keys are
 | `USER_G_SECRET` / `CONTRACT_SIGNER_SECRET` | **Server-side only** — sign deposits (`/api/send`): the G wallet, and the smart account's registered signer |
 | `EXCHANGE_G_SECRET` | **Server-side only** — signs withdrawals (`/api/withdraw`) from the exchange's G account |
 
+Both API routes reject amounts above 100 (`MAX_AMOUNT` in `lib/stellar.ts`) and
+queue submissions per source account so concurrent sends don't collide on the
+sequence number. They have **no authentication** — they sign with the secrets
+above for anyone who can reach them, so don't expose a running instance
+publicly.
+
 ## Contracts
 
 Everything this demo deploys lives in `contracts/` — a Cargo workspace of three
@@ -94,7 +100,8 @@ node scripts/bootstrap-testnet.mjs
 
 It friendbot-funds the classic accounts, builds the contracts, re-wraps the XLM
 and USDC SACs, deploys verifier → smart account → token, funds the smart account
-with XLM, mints DEMO to both source wallets, adds the USDC trustlines, and
+with XLM, mints DEMO to both source wallets and the exchange, adds the USDC
+trustlines, and
 rewrites the derived values in `.env.local` (keeping a `.env.local.bak`). Then
 `rm -rf .next && npm run dev`.
 
@@ -104,8 +111,9 @@ rewrites the derived values in `.env.local` (keeping a `.env.local.bak`). Then
 | `--dry-run` | Deploy and fund, but print the env values instead of writing them |
 
 The one thing it can't mint is testnet **USDC**. The G accounts get theirs from
-[Circle's faucet](https://faucet.circle.com); the smart account holds whatever a
-funded G account sends it (a contract keeps a SAC balance without a trustline).
+[Circle's faucet](https://faucet.circle.com) — fund the exchange G too, or
+outgoing USDC has nothing to send; the smart account holds whatever a funded G
+account sends it (a contract keeps a SAC balance without a trustline).
 Until an account holds USDC, its USDC option fails with the SAC's
 `Error(Contract, #10)` — insufficient balance.
 

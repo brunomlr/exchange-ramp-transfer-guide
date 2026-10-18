@@ -43,7 +43,7 @@ const G_TOKENS: TokenOption[] = [
     mechanism: "contract-transfer",
     enabled: !!USDC_SAC,
     envVar: "NEXT_PUBLIC_USDC_SAC",
-    note: "Classic asset moved via its Stellar Asset Contract (token.transfer). The G account needs a USDC trustline and a balance — testnet USDC comes from Circle's faucet.",
+    note: "Classic asset moved via its Stellar Asset Contract (token.transfer). A classic payment op (with a memo, if needed) would emit the same event; this demo uses the SAC call. The G account needs a USDC trustline and a balance — testnet USDC comes from Circle's faucet.",
   },
   {
     key: "sep41",

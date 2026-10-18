@@ -24,7 +24,7 @@ export default function GuidedOutgoingPage() {
           user’s G address or C address — a <strong>withdrawal</strong> in
           the exchange model, an <strong>on-ramp</strong> (fiat in, crypto out)
           in the ramp model. Walk through it one step at a time and see how the
-          transaction is built and sent in each model.
+          transaction is built and sent for each destination and token.
         </p>
       </header>
       <GuidedOutgoing />

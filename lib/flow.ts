@@ -15,6 +15,8 @@ export interface SentInfo {
   hash: string;
   ledger: number;
   summary: string;
+  /** The amount actually sent, in whole units. Absent on sends saved before it existed. */
+  amount?: string;
   destination: string;
   memoId?: string;
   /** The deposit id actually carried on-chain (memo / muxed id). */

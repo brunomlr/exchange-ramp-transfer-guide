@@ -6,11 +6,13 @@ import {
   EXCHANGE_G,
   USER_G,
   USER_CONTRACT_C,
+  isValidU64,
   muxedAddress,
   toStroops,
 } from "@/lib/stellar";
 import { findWithdrawalToken, type AccountType } from "@/lib/tokens";
 import { decodeTransferEvent } from "@/lib/events";
+import { BadRequest, checkAmount, submitAndPoll, withSourceLock } from "@/lib/submit";
 import type { EmittedEvent, WithdrawalIdMethod } from "@/lib/flow";
 
 export const runtime = "nodejs";
@@ -35,63 +37,6 @@ interface WithdrawRequest {
 
 const TRANSFER_TOPIC =
   StellarSdk.xdr.ScVal.scvSymbol("transfer").toXDR("base64");
-
-/** Submit a tx via RPC (prepare first if it contains a Soroban op), then poll. */
-async function submitAndPoll(
-  server: StellarSdk.rpc.Server,
-  tx: StellarSdk.Transaction,
-  signers: StellarSdk.Keypair[]
-) {
-  const needsPrepare = tx.operations.some(
-    (op) => op.type === "invokeHostFunction"
-  );
-  let finalTx: StellarSdk.Transaction = tx;
-  if (needsPrepare) {
-    finalTx = await server.prepareTransaction(tx);
-  }
-  signers.forEach((s) => finalTx.sign(s));
-
-  const send = await server.sendTransaction(finalTx);
-  // sendTransaction only tells us whether the tx was *admitted* to the mempool.
-  // Anything other than PENDING/DUPLICATE means it never queued, so polling
-  // getTransaction would just spin until NOT_FOUND — surface a clear reason now.
-  if (send.status === "ERROR") {
-    throw new Error(
-      "RPC rejected the transaction: " +
-        JSON.stringify(send.errorResult ?? send, null, 2)
-    );
-  }
-  if (send.status === "TRY_AGAIN_LATER") {
-    throw new Error(
-      "The network asked to try again later (TRY_AGAIN_LATER) — it didn't queue the transaction. Send it again."
-    );
-  }
-
-  // PENDING (or DUPLICATE) → wait for it to land. A tx that was admitted but
-  // then dropped (e.g. a stale sequence) stays NOT_FOUND forever, so after the
-  // window we report that distinctly from an on-chain FAILED.
-  let result = await server.getTransaction(send.hash);
-  for (let i = 0; i < 45 && result.status === "NOT_FOUND"; i++) {
-    await new Promise((r) => setTimeout(r, 1000));
-    result = await server.getTransaction(send.hash);
-  }
-  if (result.status === "NOT_FOUND") {
-    throw new Error(
-      `Transaction ${send.hash} was submitted but hasn't appeared on-chain. ` +
-        `It may still be pending or was dropped (often a duplicate submit). ` +
-        `Check it on the explorer, then send again if it never lands.`
-    );
-  }
-  if (result.status !== "SUCCESS") {
-    // FAILED — include the result so the on-chain reason is visible.
-    const detail =
-      "resultXdr" in result && result.resultXdr
-        ? " · " + result.resultXdr.toXDR("base64")
-        : "";
-    throw new Error(`Transaction ${send.hash} failed on-chain (${result.status})${detail}`);
-  }
-  return { hash: send.hash, ledger: result.ledger };
-}
 
 /**
  * Read back the CAP-67 transfer event this withdrawal emitted. The tx is already
@@ -174,7 +119,8 @@ function humanSummary(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as WithdrawRequest;
-    const { destType, tokenKey, amount } = body;
+    const { destType, tokenKey } = body;
+    const amount = (body.amount || "1").trim();
 
     if (!EXCHANGE_G) {
       return NextResponse.json(
@@ -214,6 +160,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    checkAmount(amount);
+
     const exchange = StellarSdk.Keypair.fromSecret(exchangeSecret);
     if (exchange.publicKey() !== EXCHANGE_G) {
       return NextResponse.json(
@@ -223,22 +171,23 @@ export async function POST(req: NextRequest) {
     }
 
     const server = new StellarSdk.rpc.Server(RPC_URL);
-    const source = await server.getAccount(exchange.publicKey());
-    const stroops = toStroops(amount || "1");
+    const stroops = toStroops(amount);
 
     // Resolve the optional routing id. Muxing only wraps an *account*, so it's
     // valid only for a G destination; a memo only becomes the on-chain
-    // `to_muxed_id` on a *classic* payment. Anything that doesn't fit those
-    // rails (or a malformed id) falls back to a plain address with no id.
+    // `to_muxed_id` on a *classic* payment. A method that doesn't fit those
+    // rails falls back to a plain address; a malformed id is rejected.
     const reqId = body.idMethod ?? "none";
-    const idValue = body.idValue ?? "";
-    const hasId = /^\d+$/.test(idValue);
-    const useMuxed = reqId === "muxed" && destType === "G" && hasId;
+    const rawId = body.idValue ?? "";
+    if (reqId !== "none" && !isValidU64(rawId)) {
+      throw new BadRequest(
+        `Invalid routing id "${rawId}" — it must be a whole number that fits in 64 bits.`
+      );
+    }
+    const idValue = reqId === "none" ? "" : BigInt(rawId).toString();
+    const useMuxed = reqId === "muxed" && destType === "G";
     const useMemo =
-      reqId === "memo" &&
-      destType === "G" &&
-      token.mechanism === "classic-native" &&
-      hasId;
+      reqId === "memo" && destType === "G" && token.mechanism === "classic-native";
     const idMethod: WithdrawalIdMethod = useMuxed
       ? "muxed"
       : useMemo
@@ -248,27 +197,28 @@ export async function POST(req: NextRequest) {
     // plain and rides on the transaction envelope instead.
     const muxedDest = useMuxed ? muxedAddress(USER_G, idValue) : null;
 
-    let built: { hash: string; ledger: number };
+    const built = await withSourceLock(exchange.publicKey(), async () => {
+      const source = await server.getAccount(exchange.publicKey());
 
-    if (token.mechanism === "classic-native") {
-      // Classic XLM payment: exchange G account → user G address. (Only valid
-      // for a G destination — a contract can't receive a classic payment.)
-      const tb = new StellarSdk.TransactionBuilder(source, {
-        fee: StellarSdk.BASE_FEE,
-        networkPassphrase,
-      }).addOperation(
-        StellarSdk.Operation.payment({
-          // Muxed id → an M… destination; memo/none → the plain G address.
-          destination: muxedDest ?? destination,
-          asset: StellarSdk.Asset.native(),
-          amount: amount || "1",
-        })
-      );
-      // A memo id surfaces as `to_muxed_id` in the emitted transfer event.
-      if (useMemo) tb.addMemo(StellarSdk.Memo.id(idValue));
-      const tx = tb.setTimeout(120).build();
-      built = await submitAndPoll(server, tx, [exchange]);
-    } else {
+      if (token.mechanism === "classic-native") {
+        // Classic XLM payment: exchange G account → user G address. (Only valid
+        // for a G destination — a contract can't receive a classic payment.)
+        const tb = new StellarSdk.TransactionBuilder(source, {
+          fee: StellarSdk.BASE_FEE,
+          networkPassphrase,
+        }).addOperation(
+          StellarSdk.Operation.payment({
+            // Muxed id → an M… destination; memo/none → the plain G address.
+            destination: muxedDest ?? destination,
+            asset: StellarSdk.Asset.native(),
+            amount,
+          })
+        );
+        // A memo id surfaces as `to_muxed_id` in the emitted transfer event.
+        if (useMemo) tb.addMemo(StellarSdk.Memo.id(idValue));
+        return submitAndPoll(server, tb.setTimeout(120).build(), [exchange]);
+      }
+
       // Contract transfer: the exchange G account invokes the token contract's
       // `transfer` with from = exchange G. Being the tx source, its signature
       // authorizes the move. Works for both G and C destinations.
@@ -294,8 +244,8 @@ export async function POST(req: NextRequest) {
         )
         .setTimeout(120)
         .build();
-      built = await submitAndPoll(server, tx, [exchange]);
-    }
+      return submitAndPoll(server, tx, [exchange]);
+    });
 
     const event = await fetchEmittedEvent(server, {
       contractId: token.contractId,
@@ -319,7 +269,7 @@ export async function POST(req: NextRequest) {
       summary: humanSummary(
         destType,
         token.symbol,
-        amount || "1",
+        amount,
         token.mechanism,
         idMethod,
         idValue
@@ -327,6 +277,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = err instanceof BadRequest ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

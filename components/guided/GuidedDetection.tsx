@@ -344,10 +344,20 @@ function outcomeLine(
       </>
     ) : (
       <>
-        The amount sent ({sentAmount} {c.tokenSymbol}) doesn’t match the
-        intent ({intentAmount} {c.tokenSymbol}). The ramp received the funds at
-        its address but can’t match the intent, so the off-ramp{" "}
-        <strong>won’t complete</strong>.
+        {!v.idOk && (
+          <>
+            The transfer didn’t come from the user’s wallet (
+            <code className="font-mono">{shorten(c.sourceAddr)}</code>).{" "}
+          </>
+        )}
+        {!v.amountOk && (
+          <>
+            The amount sent ({sentAmount} {c.tokenSymbol}) doesn’t match the
+            intent ({intentAmount} {c.tokenSymbol}).{" "}
+          </>
+        )}
+        The ramp received the funds at its address but can’t match the intent,
+        so the off-ramp <strong>won’t complete</strong>.
       </>
     );
   }

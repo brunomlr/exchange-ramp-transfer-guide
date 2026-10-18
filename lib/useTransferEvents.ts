@@ -23,7 +23,7 @@ export function useTransferEvents(exchangeBaseG: string) {
 
   useEffect(() => {
     if (!exchangeBaseG) return;
-    let timer: ReturnType<typeof setInterval> | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     let stopped = false;
     const server = rpcServer();
     const contractIds = allTokenContractIds();
@@ -48,6 +48,16 @@ export function useTransferEvents(exchangeBaseG: string) {
       }
     }
 
+    // Chain each poll off the previous one rather than using setInterval, so a
+    // slow RPC response never overlaps the next request.
+    function schedule() {
+      if (stopped) return;
+      timer = setTimeout(async () => {
+        await poll();
+        schedule();
+      }, POLL_MS);
+    }
+
     (async () => {
       try {
         const latest = await server.getLatestLedger();
@@ -65,12 +75,12 @@ export function useTransferEvents(exchangeBaseG: string) {
       } catch (e) {
         setError(e instanceof Error ? e.message : "RPC error");
       }
-      if (!stopped) timer = setInterval(poll, POLL_MS);
+      schedule();
     })();
 
     return () => {
       stopped = true;
-      if (timer) clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [exchangeBaseG]);
 

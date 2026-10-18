@@ -33,7 +33,7 @@ const FLOWS = [
     accent: "flow-outgoing",
     direction: "Outgoing",
     title: "Outgoing crypto transfer",
-    body: "The ramp or exchange sends crypto out of its own G account to a user's G address or C address. See how the transaction is built and sent in each model — classic payment vs. contract transfer.",
+    body: "The ramp or exchange sends crypto out of its own G account to a user's G address or C address. See how the transaction is built and sent — a classic payment or a contract transfer, depending on the destination and token.",
     mapping: [
       { model: "Exchange model", meaning: "Withdrawal — the user pulls funds out." },
       { model: "Ramp model", meaning: "On-ramp — the user pays fiat and receives crypto." },

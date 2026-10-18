@@ -9,8 +9,8 @@ publish = false
 
 [workspace.dependencies]
 # soroban-sdk 26.1 is the line the published OpenZeppelin 0.7.2 crates require
-# (`soroban-sdk = "^26.1.0"`). Testnet runs protocol 27 and happily executes
-# wasm built against older SDKs.
+# (`soroban-sdk = "^26.1.0"`). Testnet runs a newer protocol and happily
+# executes wasm built against older SDKs.
 soroban-sdk = "26.1.1"
 stellar-access = "=0.7.2"
 stellar-accounts = "=0.7.2"

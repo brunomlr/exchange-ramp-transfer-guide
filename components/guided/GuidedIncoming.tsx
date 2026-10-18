@@ -37,6 +37,10 @@ import {
   USER_CONTRACT_C,
   muxedAddress,
   toStroops,
+  isValidAmount,
+  isValidU64,
+  MAX_AMOUNT,
+  normalizeIdInput,
   explorerTxUrl,
 } from "@/lib/stellar";
 import { getTokensForAccount } from "@/lib/tokens";
@@ -314,8 +318,9 @@ export function GuidedIncoming() {
   }
 
   // ---- step 3 ----
-  const idValid = /^\d+$/.test(sentDepositId);
-  const amountValid = Number(sentAmount) > 0;
+  const idValid = isValidU64(sentDepositId);
+  const amountValid =
+    isValidAmount(sentAmount) && Number(sentAmount) <= MAX_AMOUNT;
   const canSend =
     !!effAccountType &&
     !!effModel &&
@@ -324,7 +329,8 @@ export function GuidedIncoming() {
     (effIsRamp || idValid) &&
     sendStatus !== "sending";
 
-  const idChanged = !effIsRamp && sentDepositId !== DEPOSIT_ID;
+  const idChanged =
+    !effIsRamp && idValid && BigInt(sentDepositId) !== BigInt(DEPOSIT_ID);
   // Only the ramp model matches on amount; the exchange matches on the id alone.
   const amountChanged =
     effIsRamp && amountValid && toStroops(sentAmount) !== toStroops(INTENT_AMOUNT);
@@ -380,8 +386,12 @@ export function GuidedIncoming() {
           sourceAddr: effSourceAddr,
           intentDepositId: DEPOSIT_ID,
           intentAmountStroops: toStroops(INTENT_AMOUNT).toString(),
-          sentDepositId,
-          sentAmountStroops: toStroops(sentAmount || "0").toString(),
+          // What actually went on-chain, once sent — not the live inputs,
+          // which the user can keep editing after the send.
+          sentDepositId: sentInfo?.depositId ?? sentDepositId,
+          sentAmountStroops: toStroops(
+            sentInfo?.amount ?? (amountValid ? sentAmount : "0")
+          ).toString(),
         }
       : null;
 
@@ -675,7 +685,8 @@ export function GuidedIncoming() {
                 the user sends to a per-user destination —
                 a <DocLink doc="muxed"><strong>muxed (M)</strong></DocLink> address,
                 or a <strong>G address + <DocLink doc="memo">memo</DocLink></strong>{" "}
-                for classic XLM. The id the user
+                on a classic payment (this demo sends XLM that way; a classic
+                USDC payment with a memo works the same). The id the user
                 sends arrives on-chain as <code className="font-mono">to_muxed_id</code>,
                 matched against the user’s deposit id{" "}
                 <code className="font-mono">{DEPOSIT_ID}</code>.
@@ -714,7 +725,7 @@ export function GuidedIncoming() {
         summary={
           step3Done && sentInfo ? (
             <>
-              Sent {sentAmount} {effToken?.symbol}
+              Sent {sentInfo.amount ?? sentAmount} {effToken?.symbol}
               {!effIsRamp && ` · ${idLabel.toLowerCase()} ${sentDepositId}`}
             </>
           ) : undefined
@@ -774,9 +785,14 @@ export function GuidedIncoming() {
                   inputMode="numeric"
                   value={sentDepositId}
                   onChange={(e) =>
-                    setSentDepositId(e.target.value.replace(/[^\d]/g, ""))
+                    setSentDepositId(normalizeIdInput(e.target.value))
                   }
                 />
+                {!idValid && (
+                  <p className="mt-1 text-xs text-destructive">
+                    Enter a whole number that fits in 64 bits.
+                  </p>
+                )}
               </div>
             )}
             <div className={effIsRamp ? "col-span-2" : ""}>
@@ -791,6 +807,12 @@ export function GuidedIncoming() {
                 onChange={(e) => setSentAmount(e.target.value)}
                 className={effIsRamp ? "w-40" : "w-28"}
               />
+              {!amountValid && (
+                <p className="mt-1 text-xs text-destructive">
+                  Enter an amount above 0 and up to {MAX_AMOUNT}, with at most
+                  7 decimal places.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1056,7 +1078,6 @@ function StepAction({
     <Button
       onClick={onClick}
       disabled={disabled}
-      variant={changed ? "default" : "default"}
       className="mt-4 w-full"
     >
       {changed ? (
