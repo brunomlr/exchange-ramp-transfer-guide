@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-// Favicon for the Ramps / Exchanges Transfer Simulator.
+// Favicon for the Exchange & Ramp Transfer Guide.
 // Two opposing arrows = the exchange / swap mark (assets moving in and out).
 export const size = {
   width: 32,

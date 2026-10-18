@@ -3,7 +3,7 @@ import { ArrowUpFromLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-  title: "Outgoing crypto transfer · Ramps / Exchanges",
+  title: "Outgoing crypto transfer · Exchange & Ramp Transfer Guide",
 };
 
 export default function GuidedOutgoingPage() {

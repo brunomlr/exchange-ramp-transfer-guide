@@ -3,7 +3,7 @@ import { ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-  title: "Incoming crypto transfer · Ramps / Exchanges",
+  title: "Incoming crypto transfer · Exchange & Ramp Transfer Guide",
 };
 
 export default function GuidedPage() {

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ramps / Exchanges Transfer Simulator",
+  title: "Exchange & Ramp Transfer Guide",
   description:
     "Simulate incoming and outgoing crypto transfers for Stellar ramps and exchanges and detect them in real time via RPC unified asset events (no Horizon).",
 };

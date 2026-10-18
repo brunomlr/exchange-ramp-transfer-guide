@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Guided flows · Ramps / Exchanges",
+  title: "Guided flows · Exchange & Ramp Transfer Guide",
 };
 
 const FLOWS = [

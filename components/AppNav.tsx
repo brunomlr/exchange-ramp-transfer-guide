@@ -38,7 +38,7 @@ export function AppNav() {
             >
               <ArrowLeftRight className="size-4" strokeWidth={2.25} />
             </span>
-            <span>Ramps / Exchanges</span>
+            <span>Exchange & Ramp Transfer Guide</span>
           </Link>
           <Badge variant="secondary" className="ml-auto sm:ml-0">
             Testnet
